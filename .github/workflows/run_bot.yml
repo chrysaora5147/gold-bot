@@ -19,7 +19,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install yfinance pandas numpy scikit-learn google-generativeai supabase
+          pip install --upgrade yfinance pandas numpy scikit-learn google-generativeai supabase
 
       - name: Run Gold Prediction Bot
         run: python bot.py
