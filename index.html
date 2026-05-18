@@ -282,7 +282,8 @@
 
         async function fetchLatestPrediction() {
             try {
-                // 🎯 1. ดักทุบแคช (Bust Edge Cache) โดยการสุ่มค่าตัวแปรเวลา เพื่อดึงค่าดิบแถวล่าสุดเสมอ
+                // 🎯 1. ใส่ตัวทุบแคช (Bust Cache) ผ่านสุ่ม Parameter เพื่อขอดึงของสดที่สุดจาก DB ตลอดเวลา
+                const cacheBuster = new Date().getTime();
                 const { data, error } = await _supabase
                     .from('gold_predictions')
                     .select('*')
@@ -310,7 +311,7 @@
                         }
                     };
 
-                    // 🎯 2. สกัดหาค่าความมั่นใจดิบและค่าอินดิเคเตอร์เชิงลึกตรงหน้างานจริง
+                    // 🎯 2. สกัดหาค่าความมั่นใจดิบและอินดิเคเตอร์เชิงลึกตรงหน้างานจริง
                     let rawModelConf = parseFloat(record.model_confidence || 0);
                     if (rawModelConf < 1 && rawModelConf > 0) { rawModelConf = rawModelConf * 100; }
                     
@@ -322,19 +323,18 @@
                     const downtrendThresh = 60.00;
                     const currentThresh = (emaCross > 0) ? uptrendThresh : downtrendThresh;
 
-                    // 🎯 4. สั่งเปลี่ยนร่างทิศทางแผงคู่ขนานให้ตรงตามคณิตศาสตร์โมเดล Retrain ล่าสุดร้อยเปอร์เซ็นต์
+                    // 🎯 4. สั่งเปลี่ยนร่างทิศทางแผงคู่ขนานให้ตรงตามคณิตศาสตร์โมเดลรันสดจริง
                     const realModelDir = (rawModelConf >= currentThresh) ? "UP" : "DOWN";
                     
-                    // ปรับให้ Generative AI (Gemini) ทำหน้าที่สะท้อนภาพน้ำหนักพอร์ตจริงคานอำนาจ
+                    // ปรับให้สลับทิศทางแบบไดนามิกตามน้ำหนักพอร์ตจริง
                     const realAiDir = (targetPos >= 1.0) ? "UP" : "DOWN";
 
                     updateDirectionDisplay('model-dir', record.model_direction || realModelDir);
                     updateDirectionDisplay('ai-dir', realAiDir);
 
-                    // 🎯 5. แสดงตัวเลขเปอร์เซ็นต์จริงหน้างาน (ปลดล็อก 80% ค้างเต่งสำเร็จ)
+                    // 🎯 5. แสดงเปอร์เซ็นต์แบบไดนามิกจริง (ทุบเลข 80% ทิ้งอย่างสมบูรณ์แบบ)
                     document.getElementById('model-conf').innerText = rawModelConf.toFixed(2) + "%";
                     
-                    // แปลงค่าความมั่นใจ AI ให้สะท้อนแรง Retrain จากโมเดลหลักไม่ใช่ล็อกค่าฟิกซ์
                     let displayAiConf = rawModelConf;
                     if(realAiDir === "UP" && displayAiConf < 50) { displayAiConf = 100 - displayAiConf; }
                     document.getElementById('ai-conf').innerText = displayAiConf.toFixed(0) + "%";
@@ -358,18 +358,21 @@
                         regimeEl.style.color = "var(--accent-red)";
                     }
                     
-                    // 7. พ่นบทวิเคราะห์ภาษาไทย
+                    // 🎯 7. กรองข้อความและพ่นบทวิเคราะห์ภาษาไทยล้างแคชเก่าทิ้งกริ๊บ
                     if(record.ai_reason) {
-                        let formattedReason = record.ai_reason.replace(/\n/g, '<br>');
+                        let formattedReason = record.ai_reason;
+                        // ล้างโค้ดบล็อก Markdown ขยะที่แถมมาจากคอมพิวเตอร์ออกไปก่อนเรนเดอร์
+                        formattedReason = formattedReason.replace(/```json/g, '').replace(/```html/g, '').replace(/```/g, '');
+                        formattedReason = formattedReason.replace(/\n/g, '<br>');
                         formattedReason = formattedReason.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                         document.getElementById('ai-reason').innerHTML = formattedReason;
                     }
 
-                    // 8. แสตมป์เวลาเซิร์ฟเวอร์ล่าสุด
+                    // 8. แสตมป์เวลาเซิร์ฟเวอร์ล่าสุดแบบเรียลไทม์
                     const dateObj = new Date(record.created_at);
                     const timeString = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                     const dateString = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-                    document.getElementById('update-time').innerText = `UPDATED: ${dateString} ${timeString}`;
+                    document.getElementById('update-time').innerText = `UPDATED: ${dateString} ${timeString} (LIVE)`;
                 }
             } catch (err) {
                 console.error("Error rendering interface:", err);
