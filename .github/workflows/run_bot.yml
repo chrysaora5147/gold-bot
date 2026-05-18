@@ -22,4 +22,6 @@ jobs:
           pip install --upgrade yfinance pandas numpy scikit-learn google-generativeai supabase
 
       - name: Run Gold Prediction Bot
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python bot.py
