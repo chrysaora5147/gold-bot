@@ -88,15 +88,15 @@
             animation: pulse 2s infinite;
         }
 
-        /* Consensus Section - อัปเกรดให้เป็นการรายงานโหมดพอร์ตจัดสรร */
+        /* 🚨 แก้ไขจุดนี้: แก้ไขตัวบอร์ด Consensus ไม่ให้บีบอัดอักษรจนทับซ้อนกัน */
         .consensus-board {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 16px;
-            padding: 3rem 2rem;
+            padding: 2.5rem 2rem;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 3rem;
+            gap: 2rem;
             position: relative;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
@@ -105,18 +105,17 @@
             content: '';
             position: absolute;
             left: 50%;
-            top: 20%;
-            bottom: 20%;
+            top: 15%;
+            bottom: 15%;
             width: 1px;
             background-color: var(--border-color);
         }
 
+        /* 🚨 แก้ไขจุดนี้: ล้างการจัดวางระนาบแนวดิ่ง ให้บล็อกยืดขยายตามข้อความจริงแบบลื่นไหล */
         .predict-block {
             text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            display: block; /* เปลี่ยนจาก flex เป็น block เพื่อป้องกันอาการบีบขนาด */
+            padding: 1rem;
         }
 
         .predict-block h2 {
@@ -125,20 +124,18 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             color: var(--text-secondary);
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            margin-bottom: 1.2rem;
         }
 
+        /* 🚨 แก้ไขจุดนี้: ปรับขนาดฟอนต์ของข้อความหลักให้พอดีกับกรอบการคำนวณ ไม่ล้นตาราง */
         .direction-value {
-            font-size: 3rem; 
+            font-size: 2.5rem; /* ลดลงมาจาก 3rem เพื่อป้องกันอักษรชนกันบนจอแล็ปท็อป */
             font-weight: 700;
             color: var(--accent-green);
             text-shadow: 0 0 30px var(--accent-green-glow);
-            line-height: 1.2;
-            font-family: 'Inter', 'Sarabun', sans-serif;
+            line-height: 1.3;
             letter-spacing: 1px;
+            word-wrap: break-word;
         }
 
         .insights-grid {
@@ -151,6 +148,7 @@
             .consensus-board { grid-template-columns: 1fr; gap: 2rem; padding: 2rem 1rem;}
             .consensus-board::before { display: none; }
             .insights-grid { grid-template-columns: 1fr; }
+            .direction-value { font-size: 2.2rem; }
         }
 
         .card {
@@ -280,9 +278,9 @@
                 if (data && data.length > 0) {
                     const record = data[0];
                     
-                    // 1. ตรรกะคุมสีน้ำหนักพอร์ตหลัก (LONG 100% = เขียว / HOLD 25% = แดงตั้งรับ)
+                    // 1. จัดการสถานะสัดส่วนพอร์ตหลัก
                     const modelDirEl = document.getElementById('model-dir');
-                    const targetPos = parseFloat(record.target_position); // อย่าลืมตั้งชื่อใน DB ให้ตรงกันนะบอส
+                    const targetPos = parseFloat(record.target_position || 0.25);
                     
                     if (targetPos >= 1.0) {
                         modelDirEl.innerText = "LONG 100%";
@@ -296,7 +294,7 @@
 
                     // 2. สถานะฝั่งแนวโน้มเทรนด์ใหญ่จากเส้นตัดกัน (Uptrend / Downtrend)
                     const aiDirEl = document.getElementById('ai-dir');
-                    const emaCross = parseFloat(record.ema_crossover);
+                    const emaCross = parseFloat(record.ema_crossover || 0);
                     if (emaCross > 0) {
                         aiDirEl.innerText = "UPTREND";
                         aiDirEl.style.color = "var(--accent-green)";
@@ -308,7 +306,7 @@
                     }
 
                     // 3. จัดการทศนิยมความมั่นใจตัวโมเดล Random Forest ดิบ
-                    let rawModelConf = parseFloat(record.model_confidence);
+                    let rawModelConf = parseFloat(record.model_confidence || 0);
                     if (rawModelConf < 1) { rawModelConf = rawModelConf * 100; }
                     document.getElementById('model-conf').innerText = rawModelConf.toFixed(2) + "%";
 
@@ -316,9 +314,11 @@
                     document.getElementById('strat-pos').innerText = (targetPos * 100).toFixed(0) + "%";
                     
                     // 5. พ่นบทวิเคราะห์ภาษาไทย
-                    let formattedReason = record.ai_reason.replace(/\n/g, '<br>');
-                    formattedReason = formattedReason.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                    document.getElementById('ai-reason').innerHTML = formattedReason;
+                    if(record.ai_reason) {
+                        let formattedReason = record.ai_reason.replace(/\n/g, '<br>');
+                        formattedReason = formattedReason.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        document.getElementById('ai-reason').innerHTML = formattedReason;
+                    }
 
                     // 6. แสตมป์เวลาให้สวยงามตามเวลาเซิร์ฟเวอร์
                     const dateObj = new Date(record.created_at);
