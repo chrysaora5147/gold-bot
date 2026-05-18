@@ -126,7 +126,7 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             color: var(--text-secondary);
-            margin-bottom: 1.5rem; /* ดันระยะห่างจากตัวหนังสือใหญ่ชัดเจน */
+            margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -142,7 +142,7 @@
             letter-spacing: 1px;
         }
 
-        /* 2-Column Balanced Insights Grid (ยุบช่องขวา เพิ่มพื้นที่ความสวย) */
+        /* 2-Column Balanced Insights Grid */
         .insights-grid {
             display: grid;
             grid-template-columns: 1fr 1.2fr;
@@ -299,16 +299,27 @@
                     setDirectionStyle('model-dir', record.model_direction);
                     setDirectionStyle('ai-dir', record.ai_direction);
 
-                    // อัปเดตและแปลงตัวเลขเป็นเปอร์เซ็นต์อย่างถูกต้อง (คูณ 100 ทั้งคู่ตามตาราง Supabase จริง)
-                    document.getElementById('model-conf').innerText = (parseFloat(record.model_confidence) * 100).toFixed(2) + "%";
-                    document.getElementById('ai-conf').innerText = (parseFloat(record.ai_confidence) * 100).toFixed(0) + "%";
+                    // 🔥 [จุดที่แก้ไข] ป้องกันการคำนวณทศนิยมหลอนสำหรับระบบ Random Forest 109% ตัวใหม่
+                    let rawModelConf = parseFloat(record.model_confidence);
+                    // ถ้าค่าที่ส่งมาจาก DB ต่ำกว่า 1 (เช่น 0.5185) ให้คูณ 100 เพื่อแปลงเป็นเปอร์เซ็นต์
+                    if (rawModelConf < 1) {
+                        rawModelConf = rawModelConf * 100;
+                    }
+                    document.getElementById('model-conf').innerText = rawModelConf.toFixed(2) + "%";
+
+                    // สำหรับฝั่ง AI Gemini คุมสถาปัตยกรรมเดิมอย่างปลอดภัย
+                    let rawAiConf = parseFloat(record.ai_confidence);
+                    if (rawAiConf < 1) {
+                        rawAiConf = rawAiConf * 100;
+                    }
+                    document.getElementById('ai-conf').innerText = rawAiConf.toFixed(0) + "%";
                     
                     // แสดงเนื้อหาบทวิเคราะห์ภาษาไทย
                     let formattedReason = record.ai_reason.replace(/\n/g, '<br>');
                     formattedReason = formattedReason.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                     document.getElementById('ai-reason').innerHTML = formattedReason;
 
-                    // อัปเดตเวลาเวอร์ชันภาษาอังกฤษหรูๆ
+                    // อัปเดตเวลาเวอร์ชันอังกฤษหรูๆ
                     const dateObj = new Date(record.created_at);
                     const timeString = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                     const dateString = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
