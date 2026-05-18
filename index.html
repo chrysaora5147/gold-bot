@@ -10,15 +10,15 @@
     
     <style>
         :root {
-            --bg-main: #0B0F17;
-            --bg-card: #141B27;
-            --border-color: #222F43;
-            --text-primary: #F3F4F6;
-            --text-secondary: #9CA3AF;
-            --accent-gold: #D4AF37;
+            --bg-main: #070A11;
+            --bg-card: #0E1420;
+            --border-color: #1E293B;
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --accent-gold: #E2B842;
             --accent-green: #10B981;
-            --accent-green-glow: rgba(16, 185, 129, 0.15);
-            --accent-red: #EF4444;
+            --accent-green-glow: rgba(16, 185, 129, 0.2);
+            --accent-red: #F43F5E;
         }
 
         * {
@@ -32,17 +32,17 @@
             background-color: var(--bg-main);
             color: var(--text-primary);
             line-height: 1.6;
-            padding: 2.5rem 1rem;
+            padding: 3rem 1.5rem;
             display: flex;
             justify-content: center;
         }
 
         .terminal-container {
             width: 100%;
-            max-width: 1200px;
+            max-width: 1100px;
             display: flex;
             flex-direction: column;
-            gap: 1.75rem;
+            gap: 2rem;
         }
 
         /* Top Header */
@@ -51,32 +51,33 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1.25rem;
+            padding-bottom: 1.5rem;
         }
 
         h1 {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             font-weight: 700;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             color: var(--text-primary);
         }
 
         h1 span {
             color: var(--accent-gold);
+            text-shadow: 0 0 15px rgba(226, 184, 66, 0.2);
         }
 
         .status-badge {
             display: flex;
             align-items: center;
             gap: 0.6rem;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
             background: var(--bg-card);
             padding: 0.6rem 1.2rem;
-            border-radius: 6px;
+            border-radius: 20px;
             border: 1px solid var(--border-color);
-            font-weight: 500;
-            letter-spacing: 0.5px;
+            font-weight: 600;
+            letter-spacing: 1px;
         }
 
         .pulse-dot {
@@ -88,24 +89,25 @@
             animation: pulse 2s infinite;
         }
 
-        /* Consensus Section (Fixed Overlap & Spacing completely) */
+        /* Consensus Section (Ultra Premium Layout - No Overlap) */
         .consensus-board {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 2.5rem 2rem;
+            border-radius: 16px;
+            padding: 3rem 2rem;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2rem;
+            gap: 3rem;
             position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
         .consensus-board::before {
             content: '';
             position: absolute;
             left: 50%;
-            top: 15%;
-            bottom: 15%;
+            top: 20%;
+            bottom: 20%;
             width: 1px;
             background-color: var(--border-color);
         }
@@ -114,40 +116,41 @@
             text-align: center;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
             align-items: center;
+            justify-content: center;
         }
 
         .predict-block h2 {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 2px;
             color: var(--text-secondary);
+            margin-bottom: 1.5rem; /* ดันระยะห่างจากตัวหนังสือใหญ่ชัดเจน */
             display: flex;
             align-items: center;
-            gap: 0.6rem;
-            margin-bottom: 1.25rem; /* บังคับเว้นระยะห่างจากไอคอนลงมา */
+            gap: 0.5rem;
         }
 
         .direction-value {
-            font-size: 2.6rem; /* ปรับขนาดสากล ไม่ล้น ไม่เบียด */
+            font-size: 3rem; 
             font-weight: 700;
             color: var(--accent-green);
-            text-shadow: 0 0 25px var(--accent-green-glow);
-            line-height: 1.4; /* เพิ่ม Line height ป้องกันวรรณยุกต์ไทยลอยขี่หัวไอคอน */
+            text-shadow: 0 0 30px var(--accent-green-glow);
+            line-height: 1.2;
             font-family: 'Sarabun', 'Inter', sans-serif;
+            letter-spacing: 1px;
         }
 
-        /* 3-Column Insights Grid */
+        /* 2-Column Balanced Insights Grid (ยุบช่องขวา เพิ่มพื้นที่ความสวย) */
         .insights-grid {
             display: grid;
-            grid-template-columns: 1fr 1.3fr 0.7fr;
-            gap: 1.5rem;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 2rem;
         }
 
-        @media (max-width: 900px) {
-            .consensus-board { grid-template-columns: 1fr; padding: 2rem 1rem;}
+        @media (max-width: 850px) {
+            .consensus-board { grid-template-columns: 1fr; gap: 2rem; padding: 2rem 1rem;}
             .consensus-board::before { display: none; }
             .insights-grid { grid-template-columns: 1fr; }
         }
@@ -155,72 +158,58 @@
         .card {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 1.75rem;
+            border-radius: 16px;
+            padding: 2rem;
             display: flex;
             flex-direction: column;
-            gap: 1.25rem;
+            gap: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
 
         .card-title {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
+            letter-spacing: 1.5px;
             color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #1E293B;
+            padding-bottom: 0.85rem;
         }
 
-        /* Column 1: Model Metrics */
+        /* Column 1: Model Weights */
         .metric-box {
             display: flex;
             flex-direction: column;
-            gap: 0.4rem;
+            gap: 0.5rem;
             padding: 0.5rem 0;
         }
 
         .metric-label {
             font-size: 0.85rem;
             color: var(--text-secondary);
+            font-weight: 400;
         }
 
         .metric-value {
-            font-size: 2.2rem;
+            font-size: 2.4rem;
             font-weight: 700;
             color: var(--text-primary);
-            line-height: 1.2;
+            line-height: 1.1;
+            letter-spacing: -0.5px;
         }
 
-        /* Column 2: AI Macro Review (Thai Description Inside Only) */
+        /* Column 2: AI Macro Review */
         .macro-text {
             font-size: 0.95rem;
-            color: #E5E7EB;
+            color: #E2E8F0;
             text-align: justify;
             font-family: 'Sarabun', sans-serif;
-            line-height: 1.7;
+            line-height: 1.75;
         }
 
         .macro-text strong {
             color: var(--accent-gold);
             font-weight: 600;
-        }
-
-        /* Column 3: Terminal Info Feed */
-        .feed-item {
-            border-left: 2px solid var(--border-color);
-            padding-left: 0.85rem;
-            margin-bottom: 0.5rem;
-        }
-        .feed-title {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        .feed-desc {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 0.15rem;
         }
 
         @keyframes pulse {
@@ -237,7 +226,7 @@
             <h1>GOLD <span>QUANT</span> TERMINAL</h1>
             <div class="status-badge">
                 <div class="pulse-dot"></div>
-                <span id="update-time">CONNECTING...</span>
+                <span id="update-time">CONNECTING SERVER...</span>
             </div>
         </header>
 
@@ -260,7 +249,7 @@
                     <span class="metric-label">Probability (Direction Up)</span>
                     <span class="metric-value" id="model-conf">--%</span>
                 </div>
-                <div class="metric-box" style="border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+                <div class="metric-box" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
                     <span class="metric-label">AI Signal Weight</span>
                     <span class="metric-value" id="ai-conf" style="color: var(--accent-gold);">--%</span>
                 </div>
@@ -269,23 +258,7 @@
             <div class="card">
                 <div class="card-title">Macro & AI Analysis Reason</div>
                 <div class="macro-text" id="ai-reason">
-                    Fetching records from network server...
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">System Topology</div>
-                <div class="feed-item">
-                    <div class="feed-title">Data Pipeline</div>
-                    <div class="feed-desc">Automated via GitHub Actions</div>
-                </div>
-                <div class="feed-item">
-                    <div class="feed-title">Database Storage</div>
-                    <div class="feed-desc">Supabase Cloud PostgreSQL</div>
-                </div>
-                <div class="feed-item">
-                    <div class="feed-title">Core Architecture</div>
-                    <div class="feed-desc">yFinance + Logistic Regression</div>
+                    Syncing neural network logs...
                 </div>
             </div>
 
@@ -316,26 +289,26 @@
                         el.innerText = value;
                         if(value.includes("DOWN") || value.includes("ลง")) {
                             el.style.color = "var(--accent-red)";
-                            el.style.textShadow = "0 0 25px rgba(239, 68, 68, 0.15)";
+                            el.style.textShadow = "0 0 30px rgba(244, 63, 94, 0.2)";
                         } else {
                             el.style.color = "var(--accent-green)";
-                            el.style.textShadow = "0 0 25px var(--accent-green-glow)";
+                            el.style.textShadow = "0 0 30px var(--accent-green-glow)";
                         }
                     };
 
                     setDirectionStyle('model-dir', record.model_direction);
                     setDirectionStyle('ai-dir', record.ai_direction);
 
-                    // แก้ไขบั๊กคูณ 100 ทั้งโมเดลและ AI ให้ดึงค่าเปอร์เซ็นต์ออกมาตรงตามฐานข้อมูลจริงเป๊ะๆ
+                    // อัปเดตและแปลงตัวเลขเป็นเปอร์เซ็นต์อย่างถูกต้อง (คูณ 100 ทั้งคู่ตามตาราง Supabase จริง)
                     document.getElementById('model-conf').innerText = (parseFloat(record.model_confidence) * 100).toFixed(2) + "%";
                     document.getElementById('ai-conf').innerText = (parseFloat(record.ai_confidence) * 100).toFixed(0) + "%";
                     
-                    // แปลงและแสดงผลข้อมูลข่าวสารภาษาไทยในกล่องกลาง
+                    // แสดงเนื้อหาบทวิเคราะห์ภาษาไทย
                     let formattedReason = record.ai_reason.replace(/\n/g, '<br>');
                     formattedReason = formattedReason.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                     document.getElementById('ai-reason').innerHTML = formattedReason;
 
-                    // แสดงเวลาอัปเดตสไตล์อินเตอร์ (English Format)
+                    // อัปเดตเวลาเวอร์ชันภาษาอังกฤษหรูๆ
                     const dateObj = new Date(record.created_at);
                     const timeString = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                     const dateString = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
