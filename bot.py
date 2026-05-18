@@ -98,7 +98,7 @@ target_position = 1.0 if raw_proba >= current_thresh else base_exp
 
 # 4. CALL GEMINI AI GENERATION FOR MACRO INSIGHTS
 print("🧠 Triggering Gemini Intelligence analysis...")
-gemini_model = genai.GenerativeModel('gemini-pro')
+gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 prompt = f"""
 คุณเป็นนักวิเคราะห์ราคาทองคำระดับโลกในกองทุน Quant ให้วิเคราะห์ราคาทองคำวันนี้สั้นๆ เป็นภาษาไทย 
 โดยอ้างอิงจากข้อมูลเชิงปริมาณ: ความน่าเชื่อถือของโมเดล Quant อยู่ที่ {raw_proba*100:.2f}%, 
