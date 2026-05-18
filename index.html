@@ -6,7 +6,7 @@
     <title>GOLD QUANT TERMINAL</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -88,7 +88,7 @@
             animation: pulse 2s infinite;
         }
 
-        /* Consensus Section (Fixed Font Overlap & Spacing) */
+        /* Consensus Section (Fixed Overlap & Spacing completely) */
         .consensus-board {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -114,9 +114,8 @@
             text-align: center;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
-            gap: 0.75rem; /* เพิ่มระยะห่างระหว่างหัวข้อกับตัวหนังสือใหญ่ */
         }
 
         .predict-block h2 {
@@ -128,15 +127,16 @@
             display: flex;
             align-items: center;
             gap: 0.6rem;
+            margin-bottom: 1.25rem; /* บังคับเว้นระยะห่างจากไอคอนลงมา */
         }
 
         .direction-value {
-            font-size: 2.8rem; /* ปรับขนาดลงมานิดนึงเพื่อไม่ให้ล้นหรือซ้อนกัน */
+            font-size: 2.6rem; /* ปรับขนาดสากล ไม่ล้น ไม่เบียด */
             font-weight: 700;
             color: var(--accent-green);
             text-shadow: 0 0 25px var(--accent-green-glow);
-            line-height: 1.1; /* บีบขอบเขตกล่องตัวหนังสือไม่ให้ไปเบียดใคร */
-            margin-top: 0.25rem;
+            line-height: 1.4; /* เพิ่ม Line height ป้องกันวรรณยุกต์ไทยลอยขี่หัวไอคอน */
+            font-family: 'Sarabun', 'Inter', sans-serif;
         }
 
         /* 3-Column Insights Grid */
@@ -192,16 +192,13 @@
             line-height: 1.2;
         }
 
-        /* Column 2: AI Macro Review (Keep Thai content readable) */
+        /* Column 2: AI Macro Review (Thai Description Inside Only) */
         .macro-text {
             font-size: 0.95rem;
             color: #E5E7EB;
             text-align: justify;
             font-family: 'Sarabun', sans-serif;
-        }
-        
-        .macro-text br {
-            margin-bottom: 0.5rem;
+            line-height: 1.7;
         }
 
         .macro-text strong {
@@ -240,7 +237,7 @@
             <h1>GOLD <span>QUANT</span> TERMINAL</h1>
             <div class="status-badge">
                 <div class="pulse-dot"></div>
-                <span id="update-time">LOADING DATA...</span>
+                <span id="update-time">CONNECTING...</span>
             </div>
         </header>
 
@@ -272,7 +269,7 @@
             <div class="card">
                 <div class="card-title">Macro & AI Analysis Reason</div>
                 <div class="macro-text" id="ai-reason">
-                    Connecting to central database server...
+                    Fetching records from network server...
                 </div>
             </div>
 
@@ -314,7 +311,6 @@
                 if (data && data.length > 0) {
                     const record = data[0];
                     
-                    // ปรับสีและกรอบเงาตามทิศทางผลทำนายอัตโนมัติ
                     const setDirectionStyle = (elementId, value) => {
                         const el = document.getElementById(elementId);
                         el.innerText = value;
@@ -330,16 +326,16 @@
                     setDirectionStyle('model-dir', record.model_direction);
                     setDirectionStyle('ai-dir', record.ai_direction);
 
-                    // แก้ไขจุดบั๊กคูณเปอร์เซ็นต์ให้ตรงล็อคตัวแปร
+                    // แก้ไขบั๊กคูณ 100 ทั้งโมเดลและ AI ให้ดึงค่าเปอร์เซ็นต์ออกมาตรงตามฐานข้อมูลจริงเป๊ะๆ
                     document.getElementById('model-conf').innerText = (parseFloat(record.model_confidence) * 100).toFixed(2) + "%";
-                    document.getElementById('ai-conf').innerText = parseFloat(record.ai_confidence).toFixed(0) + "%"; // ดึงจากฐานข้อมูลตรงๆ ไม่ต้องคูณซ้ำถ้าเก็บเป็นเลขจำนวนเต็มแล้ว
+                    document.getElementById('ai-conf').innerText = (parseFloat(record.ai_confidence) * 100).toFixed(0) + "%";
                     
-                    // จัดการ Format ข้อความภาษาไทยในช่องเหตุผล
+                    // แปลงและแสดงผลข้อมูลข่าวสารภาษาไทยในกล่องกลาง
                     let formattedReason = record.ai_reason.replace(/\n/g, '<br>');
                     formattedReason = formattedReason.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                     document.getElementById('ai-reason').innerHTML = formattedReason;
 
-                    // ปรับการแสดงผลเวลาอัปเดตภาษาอังกฤษ
+                    // แสดงเวลาอัปเดตสไตล์อินเตอร์ (English Format)
                     const dateObj = new Date(record.created_at);
                     const timeString = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                     const dateString = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
