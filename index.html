@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GOLD QUANT TERMINAL</title>
+    <title>GOLD QUANT TERMINAL - V11 Hybrid</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -19,6 +19,7 @@
             --accent-green: #10B981;
             --accent-green-glow: rgba(16, 185, 129, 0.2);
             --accent-red: #F43F5E;
+            --accent-red-glow: rgba(244, 63, 94, 0.2);
         }
 
         * {
@@ -88,7 +89,6 @@
             animation: pulse 2s infinite;
         }
 
-        /* 🟢 โซนดวลทิศทางราคาแบบเดิม (UP / DOWN) คลีน ๆ ไม่อับอักษรทับซ้อน */
         .consensus-board {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -129,19 +129,16 @@
         .direction-value {
             font-size: 3.2rem; 
             font-weight: 800;
-            color: var(--accent-green);
             line-height: 1.2;
             letter-spacing: 2px;
         }
 
-        /* 🟢 ปรับ Insights Grid เป็น 2 คอลัมน์หลักขนาดใหญ่คุมสัดส่วนข้อมูล */
         .insights-grid {
             display: grid;
             grid-template-columns: 1fr 1.2fr;
             gap: 2rem;
         }
 
-        /* กล่องย่อยด้านในโมเดลโชว์แบบตารางคู่ขนาน */
         .metrics-subgrid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -251,14 +248,14 @@
                     </div>
                     <div class="metric-box">
                         <span class="metric-label">AI Gemini Confidence</span>
-                        <span class="metric-value" id="ai-conf" style="color: var(--accent-gold);">--%</span>
+                        <span class="metric-value" id="ai-conf">--%</span>
                     </div>
                 </div>
 
                 <div class="metrics-subgrid" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
                     <div class="metric-box">
                         <span class="metric-label">Target Portfolio Weight</span>
-                        <span class="metric-value" id="portfolio-weight" style="color: var(--accent-green);">--%</span>
+                        <span class="metric-value" id="portfolio-weight">--%</span>
                     </div>
                     <div class="metric-box">
                         <span class="metric-label">Macro Market Regime</span>
@@ -296,34 +293,46 @@
                 if (data && data.length > 0) {
                     const record = data[0];
                     
-                    const setDirectionStyle = (elementId, value) => {
+                    // 🎯 ฟังก์ชันจัดสไตล์ทิศทางแบบไดนามิกแยกอิสระตามค่าจริงหลังบ้าน ไม่ล็อกฟิกซ์สี
+                    const updateDirectionDisplay = (elementId, value) => {
                         const el = document.getElementById(elementId);
-                        el.innerText = value;
-                        if(value.includes("DOWN") || value.includes("ลง")) {
+                        el.innerText = value.toUpperCase();
+                        
+                        if(value.toUpperCase().includes("DOWN") || value.toUpperCase().includes("ลง")) {
                             el.style.color = "var(--accent-red)";
-                            el.style.textShadow = "0 0 30px rgba(244, 63, 94, 0.2)";
-                        } else {
+                            el.style.textShadow = "0 0 30px var(--accent-red-glow)";
+                        } else if(value.toUpperCase().includes("UP") || value.toUpperCase().includes("ขึ้น")) {
                             el.style.color = "var(--accent-green)";
                             el.style.textShadow = "0 0 30px var(--accent-green-glow)";
+                        } else {
+                            el.style.color = "var(--text-secondary)";
+                            el.style.textShadow = "none";
                         }
                     };
 
-                    // 1. ดึงข้อความทิศทางเพียวๆ (UP / DOWN) ชนกันตรงๆ แบบเดิมกลับมา
-                    setDirectionStyle('model-dir', record.model_direction || "HOLD");
-                    setDirectionStyle('ai-dir', record.ai_direction || "HOLD");
+                    // 1. อัปเดตทิศทางคู่แฝดสับเปลี่ยนจริงหน้างาน
+                    updateDirectionDisplay('model-dir', record.model_direction || "HOLD");
+                    updateDirectionDisplay('ai-dir', record.ai_direction || "HOLD");
 
-                    // 2. ข้อมูลฝั่งโมเดลเก่า: ตัวเลขเปอร์เซ็นต์ความมั่นใจดึงเช็คแข่งกัน
+                    // 2. ล้างบางลูปแช่แข็ง อัปเดต % ความมั่นใจจริงหน้างานนาทีนี้
                     let rawModelConf = parseFloat(record.model_confidence || 0);
-                    if (rawModelConf < 1) { rawModelConf = rawModelConf * 100; }
+                    if (rawModelConf < 1 && rawModelConf > 0) { rawModelConf = rawModelConf * 100; }
                     document.getElementById('model-conf').innerText = rawModelConf.toFixed(2) + "%";
 
                     let rawAiConf = parseFloat(record.ai_confidence || 0);
-                    if (rawAiConf < 1) { rawAiConf = rawAiConf * 100; }
+                    if (rawAiConf < 1 && rawAiConf > 0) { rawAiConf = rawAiConf * 100; }
                     document.getElementById('ai-conf').innerText = rawAiConf.toFixed(0) + "%";
+                    document.getElementById('ai-conf').style.color = "var(--accent-gold)";
 
-                    // 3. ข้อมูลจัดสรรพอร์ตร่าง V11 เพิ่มเติม: สัดส่วนการลงทุนและสภาพตลาดจริง
+                    // 3. ข้อมูลจัดสรรพอร์ตเชิงลึกและสภาวะตลาดจริง V11
                     const targetPos = parseFloat(record.target_position || 0.25);
-                    document.getElementById('portfolio-weight').innerText = (targetPos * 100).toFixed(0) + "% Gold";
+                    const portEl = document.getElementById('portfolio-weight');
+                    portEl.innerText = (targetPos * 100).toFixed(0) + "% Gold";
+                    if (targetPos >= 1.0) {
+                        portEl.style.color = "var(--accent-green)";
+                    } else {
+                        portEl.style.color = "var(--accent-gold)"; // ตั้งรับเพลย์เซฟ
+                    }
                     
                     const regimeEl = document.getElementById('macro-regime');
                     const emaCross = parseFloat(record.ema_crossover || 0);
@@ -335,22 +344,22 @@
                         regimeEl.style.color = "var(--accent-red)";
                     }
                     
-                    // 4. พ่นบทวิเคราะห์ภาษาไทย
+                    // 4. แสดงบทวิเคราะห์ข่าวสารมหาภาคแท้จริงภาษาไทยจาก Gemini
                     if(record.ai_reason) {
                         let formattedReason = record.ai_reason.replace(/\n/g, '<br>');
                         formattedReason = formattedReason.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                         document.getElementById('ai-reason').innerHTML = formattedReason;
                     }
 
-                    // 5. แสตมป์เวลาเซิร์ฟเวอร์ล่าสุด
+                    // 5. แสตมป์เวลาอัปเดตสถานะล่าสุดของระบบปัจจุบัน
                     const dateObj = new Date(record.created_at);
                     const timeString = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                     const dateString = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
                     document.getElementById('update-time').innerText = `UPDATED: ${dateString} ${timeString}`;
                 }
             } catch (err) {
-                console.error("Error loading terminal data:", err);
-                document.getElementById('ai-reason').innerText = "Error loading connection to database.";
+                console.error("Error rendering interface:", err);
+                document.getElementById('ai-reason').innerText = "Database connection synchronization dropped.";
             }
         }
 
