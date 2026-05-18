@@ -328,8 +328,9 @@
                     setDirectionStyle('ai-dir', record.ai_direction);
 
                     // อัปเดตตัวเลขความมั่นใจ
-                    document.getElementById('model-conf').innerText = parseFloat(record.model_confidence).toFixed(2) + "%";
-                    document.getElementById('ai-conf').innerText = parseFloat(record.ai_confidence).toFixed(0) + "%";
+                    // เปลี่ยนเป็นแบบนี้แทนครับบอส!
+                    document.getElementById('model-conf').innerText = (parseFloat(record.model_confidence) * 100).toFixed(2) + "%";
+                    document.getElementById('ai-conf').innerText = (parseFloat(record.ai_confidence) * 100).toFixed(0) + "%";
                     
                     // แปลงข้อความ Markdown ของข่าวสั้นๆ ให้แสดงผลเว้นบรรทัดสวยงาม
                     let formattedReason = record.ai_reason.replace(/\n/g, '<br>');
