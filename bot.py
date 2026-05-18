@@ -8,7 +8,7 @@ from supabase import create_client, Client
 print("🦿 กำลังคำนวณโมเดลคณิตศาสตร์ระบบไฮบริด V11 และเรียกใช้ Gemini API หลังบ้าน...")
 
 # --- ค่า CONFIG ของบอส ---
-GOOGLE_API_KEY = "AIzaSyDPHyW9ekFxcCXPBSgbuTjhtLMR1jc5L38" # API Key ของบอส
+GOOGLE_API_KEY = "AIzaSyDPHyW9eKFxcCXPBSgbuTjhtLMRljc5L38" # API Key ของบอส
 SUPABASE_URL = "https://vsgbfcatnpytrsshdbkr.supabase.co"
 SUPABASE_KEY = "sb_publishable_KpdMpkgsChvu0pR_Gh1y8Q_0LxccpPq"
 
