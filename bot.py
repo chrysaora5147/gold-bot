@@ -99,13 +99,17 @@ target_position = 1.0 if raw_proba >= current_thresh else base_exp
 
 # 4. CALL GEMINI AI GENERATION FOR MACRO INSIGHTS
 print("🧠 Triggering Gemini Intelligence analysis...")
-gemini_model = genai.GenerativeModel('gemini-2.5-flash')
+gemini_model = genai.GenerativeModel('gemini-2.0-flash')
+
+# 🎯 ปรับโครงสร้าง Prompt ใหม่ บังคับให้วิเคราะห์ข่าวสารและภาพรวมตลาดโลกแท้จริงเพื่อคานอำนาจโมเดล
 prompt = f"""
-คุณเป็นนักวิเคราะห์ราคาทองคำระดับโลกในกองทุน Quant ให้วิเคราะห์ราคาทองคำวันนี้สั้นๆ เป็นภาษาไทย 
-โดยอ้างอิงจากข้อมูลเชิงปริมาณ: ความน่าเชื่อถือของโมเดล Quant อยู่ที่ {raw_proba*100:.2f}%, 
-สัญญาณเทรนด์ตลาดใหญ่ (EMA Crossover) อยู่ที่ {ema_crossover:.4f} ซึ่งสะท้อนสภาวะตลาดแบบ {"Uptrend ขาขึ้น" if ema_crossover > 0 else "Downtrend ขาลง"}
-และระบบประมวลผลจัดสรรน้ำหนักพอร์ตไปที่ {target_position*100:.0f}% Gold สรุปกระชับไม่เกิน 4 บรรทัด
+คุณเป็นนักวิเคราะห์ราคาทองคำระดับโลกในกองทุน Quant 
+หน้าหน้าที่ของคุณคือสรุป 'ภาพรวมข่าวสารเศรษฐกิจมหภาคและข่าวภูมิรัฐศาสตร์ล่าสุดของวันนี้' ที่ส่งผลต่อราคาทองคำ 
+(เช่น ดัชนีดอลลาร์ DXY, อัตราผลตอบแทนพันธบัตร Bond Yield, นโยบายเฟด หรือความตึงเครียดทางภูมิรัฐศาสตร์) 
+จงเขียนบทวิเคราะห์สั้นกระชับเป็นภาษาไทย ความยาวไม่เกิน 4 บรรทัด โดยเขียนแยกเป็นข้อๆ 1, 2, 3 
+ให้อ่านง่าย มีชั้นเชิงแบบมืออาชีพ และต้องไม่สลับเอาตัวเลขความมั่นใจของโมเดล Quant มาอธิบายซ้ำซาก
 """
+
 response = gemini_model.generate_content(prompt)
 ai_reason_text = response.text
 
