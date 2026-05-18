@@ -39,7 +39,7 @@
 
         .terminal-container {
             width: 100%;
-            max-width: 1100px;
+            max-width: 1200px;
             display: flex;
             flex-direction: column;
             gap: 2rem;
@@ -88,7 +88,7 @@
             animation: pulse 2s infinite;
         }
 
-        /* 🚨 แก้ไขจุดนี้: แก้ไขตัวบอร์ด Consensus ไม่ให้บีบอัดอักษรจนทับซ้อนกัน */
+        /* 🟢 โซนดวลทิศทางราคาแบบเดิม (UP / DOWN) คลีน ๆ ไม่อับอักษรทับซ้อน */
         .consensus-board {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -111,11 +111,10 @@
             background-color: var(--border-color);
         }
 
-        /* 🚨 แก้ไขจุดนี้: ล้างการจัดวางระนาบแนวดิ่ง ให้บล็อกยืดขยายตามข้อความจริงแบบลื่นไหล */
         .predict-block {
             text-align: center;
-            display: block; /* เปลี่ยนจาก flex เป็น block เพื่อป้องกันอาการบีบขนาด */
-            padding: 1rem;
+            display: block;
+            padding: 0.5rem;
         }
 
         .predict-block h2 {
@@ -124,31 +123,35 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             color: var(--text-secondary);
-            margin-bottom: 1.2rem;
+            margin-bottom: 1rem;
         }
 
-        /* 🚨 แก้ไขจุดนี้: ปรับขนาดฟอนต์ของข้อความหลักให้พอดีกับกรอบการคำนวณ ไม่ล้นตาราง */
         .direction-value {
-            font-size: 2.5rem; /* ลดลงมาจาก 3rem เพื่อป้องกันอักษรชนกันบนจอแล็ปท็อป */
-            font-weight: 700;
+            font-size: 3.2rem; 
+            font-weight: 800;
             color: var(--accent-green);
-            text-shadow: 0 0 30px var(--accent-green-glow);
-            line-height: 1.3;
-            letter-spacing: 1px;
-            word-wrap: break-word;
+            line-height: 1.2;
+            letter-spacing: 2px;
         }
 
+        /* 🟢 ปรับ Insights Grid เป็น 2 คอลัมน์หลักขนาดใหญ่คุมสัดส่วนข้อมูล */
         .insights-grid {
             display: grid;
             grid-template-columns: 1fr 1.2fr;
             gap: 2rem;
         }
 
-        @media (max-width: 850px) {
+        /* กล่องย่อยด้านในโมเดลโชว์แบบตารางคู่ขนาน */
+        .metrics-subgrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
             .consensus-board { grid-template-columns: 1fr; gap: 2rem; padding: 2rem 1rem;}
             .consensus-board::before { display: none; }
             .insights-grid { grid-template-columns: 1fr; }
-            .direction-value { font-size: 2.2rem; }
         }
 
         .card {
@@ -175,22 +178,23 @@
         .metric-box {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
-            padding: 0.5rem 0;
+            gap: 0.4rem;
+            padding: 0.2rem 0;
         }
 
         .metric-label {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            font-weight: 400;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .metric-value {
-            font-size: 2.4rem;
+            font-size: 2rem;
             font-weight: 700;
             color: var(--text-primary);
             line-height: 1.1;
-            letter-spacing: -0.5px;
         }
 
         .macro-text {
@@ -198,7 +202,7 @@
             color: #E2E8F0;
             text-align: justify;
             font-family: 'Sarabun', sans-serif;
-            line-height: 1.75;
+            line-height: 1.8;
         }
 
         .macro-text strong {
@@ -226,26 +230,40 @@
 
         <section class="consensus-board">
             <div class="predict-block">
-                <h2>🤖 Tactical Target Allocation</h2>
-                <div class="direction-value" id="model-dir">LOADING...</div>
+                <h2>🤖 Quantitative Model Direction</h2>
+                <div class="direction-value" id="model-dir">--</div>
             </div>
             <div class="predict-block">
-                <h2>🧠 Macro Regime Filter</h2>
-                <div class="direction-value" id="ai-dir">LOADING...</div>
+                <h2>🧠 Generative AI (Gemini) Direction</h2>
+                <div class="direction-value" id="ai-dir">--</div>
             </div>
         </section>
 
         <section class="insights-grid">
             
             <div class="card">
-                <div class="card-title">Model Weights & Accounting</div>
-                <div class="metric-box">
-                    <span class="metric-label">Model Raw Probability</span>
-                    <span class="metric-value" id="model-conf">--%</span>
+                <div class="card-title">System Weights & Tactical Execution</div>
+                
+                <div class="metrics-subgrid">
+                    <div class="metric-box">
+                        <span class="metric-label">Model Confidence</span>
+                        <span class="metric-value" id="model-conf">--%</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">AI Gemini Confidence</span>
+                        <span class="metric-value" id="ai-conf" style="color: var(--accent-gold);">--%</span>
+                    </div>
                 </div>
-                <div class="metric-box" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
-                    <span class="metric-label">Current Strategy Position</span>
-                    <span class="metric-value" id="strat-pos" style="color: var(--accent-gold);">--%</span>
+
+                <div class="metrics-subgrid" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+                    <div class="metric-box">
+                        <span class="metric-label">Target Portfolio Weight</span>
+                        <span class="metric-value" id="portfolio-weight" style="color: var(--accent-green);">--%</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Macro Market Regime</span>
+                        <span class="metric-value" id="macro-regime">--</span>
+                    </div>
                 </div>
             </div>
 
@@ -278,49 +296,53 @@
                 if (data && data.length > 0) {
                     const record = data[0];
                     
-                    // 1. จัดการสถานะสัดส่วนพอร์ตหลัก
-                    const modelDirEl = document.getElementById('model-dir');
-                    const targetPos = parseFloat(record.target_position || 0.25);
-                    
-                    if (targetPos >= 1.0) {
-                        modelDirEl.innerText = "LONG 100%";
-                        modelDirEl.style.color = "var(--accent-green)";
-                        modelDirEl.style.textShadow = "0 0 30px var(--accent-green-glow)";
-                    } else {
-                        modelDirEl.innerText = "HOLD 25%";
-                        modelDirEl.style.color = "var(--accent-red)";
-                        modelDirEl.style.textShadow = "0 0 30px rgba(244, 63, 94, 0.2)";
-                    }
+                    const setDirectionStyle = (elementId, value) => {
+                        const el = document.getElementById(elementId);
+                        el.innerText = value;
+                        if(value.includes("DOWN") || value.includes("ลง")) {
+                            el.style.color = "var(--accent-red)";
+                            el.style.textShadow = "0 0 30px rgba(244, 63, 94, 0.2)";
+                        } else {
+                            el.style.color = "var(--accent-green)";
+                            el.style.textShadow = "0 0 30px var(--accent-green-glow)";
+                        }
+                    };
 
-                    // 2. สถานะฝั่งแนวโน้มเทรนด์ใหญ่จากเส้นตัดกัน (Uptrend / Downtrend)
-                    const aiDirEl = document.getElementById('ai-dir');
-                    const emaCross = parseFloat(record.ema_crossover || 0);
-                    if (emaCross > 0) {
-                        aiDirEl.innerText = "UPTREND";
-                        aiDirEl.style.color = "var(--accent-green)";
-                        aiDirEl.style.textShadow = "0 0 30px var(--accent-green-glow)";
-                    } else {
-                        aiDirEl.innerText = "DOWNTREND";
-                        aiDirEl.style.color = "var(--accent-red)";
-                        aiDirEl.style.textShadow = "0 0 30px rgba(244, 63, 94, 0.2)";
-                    }
+                    // 1. ดึงข้อความทิศทางเพียวๆ (UP / DOWN) ชนกันตรงๆ แบบเดิมกลับมา
+                    setDirectionStyle('model-dir', record.model_direction || "HOLD");
+                    setDirectionStyle('ai-dir', record.ai_direction || "HOLD");
 
-                    // 3. จัดการทศนิยมความมั่นใจตัวโมเดล Random Forest ดิบ
+                    // 2. ข้อมูลฝั่งโมเดลเก่า: ตัวเลขเปอร์เซ็นต์ความมั่นใจดึงเช็คแข่งกัน
                     let rawModelConf = parseFloat(record.model_confidence || 0);
                     if (rawModelConf < 1) { rawModelConf = rawModelConf * 100; }
                     document.getElementById('model-conf').innerText = rawModelConf.toFixed(2) + "%";
 
-                    // 4. แสดงน้ำหนักสัดส่วนพอร์ตปัจจุบันฝั่งขวา
-                    document.getElementById('strat-pos').innerText = (targetPos * 100).toFixed(0) + "%";
+                    let rawAiConf = parseFloat(record.ai_confidence || 0);
+                    if (rawAiConf < 1) { rawAiConf = rawAiConf * 100; }
+                    document.getElementById('ai-conf').innerText = rawAiConf.toFixed(0) + "%";
+
+                    // 3. ข้อมูลจัดสรรพอร์ตร่าง V11 เพิ่มเติม: สัดส่วนการลงทุนและสภาพตลาดจริง
+                    const targetPos = parseFloat(record.target_position || 0.25);
+                    document.getElementById('portfolio-weight').innerText = (targetPos * 100).toFixed(0) + "% Gold";
                     
-                    // 5. พ่นบทวิเคราะห์ภาษาไทย
+                    const regimeEl = document.getElementById('macro-regime');
+                    const emaCross = parseFloat(record.ema_crossover || 0);
+                    if (emaCross > 0) {
+                        regimeEl.innerText = "UPTREND";
+                        regimeEl.style.color = "var(--accent-green)";
+                    } else {
+                        regimeEl.innerText = "DOWNTREND";
+                        regimeEl.style.color = "var(--accent-red)";
+                    }
+                    
+                    // 4. พ่นบทวิเคราะห์ภาษาไทย
                     if(record.ai_reason) {
                         let formattedReason = record.ai_reason.replace(/\n/g, '<br>');
                         formattedReason = formattedReason.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                         document.getElementById('ai-reason').innerHTML = formattedReason;
                     }
 
-                    // 6. แสตมป์เวลาให้สวยงามตามเวลาเซิร์ฟเวอร์
+                    // 5. แสตมป์เวลาเซิร์ฟเวอร์ล่าสุด
                     const dateObj = new Date(record.created_at);
                     const timeString = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                     const dateString = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
