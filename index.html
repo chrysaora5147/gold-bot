@@ -45,7 +45,6 @@
             gap: 2rem;
         }
 
-        /* Top Header */
         header {
             display: flex;
             justify-content: space-between;
@@ -89,7 +88,7 @@
             animation: pulse 2s infinite;
         }
 
-        /* Consensus Section (Ultra Premium Layout - No Overlap) */
+        /* Consensus Section - อัปเกรดให้เป็นการรายงานโหมดพอร์ตจัดสรร */
         .consensus-board {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -138,11 +137,10 @@
             color: var(--accent-green);
             text-shadow: 0 0 30px var(--accent-green-glow);
             line-height: 1.2;
-            font-family: 'Sarabun', 'Inter', sans-serif;
+            font-family: 'Inter', 'Sarabun', sans-serif;
             letter-spacing: 1px;
         }
 
-        /* 2-Column Balanced Insights Grid */
         .insights-grid {
             display: grid;
             grid-template-columns: 1fr 1.2fr;
@@ -176,7 +174,6 @@
             padding-bottom: 0.85rem;
         }
 
-        /* Column 1: Model Weights */
         .metric-box {
             display: flex;
             flex-direction: column;
@@ -198,7 +195,6 @@
             letter-spacing: -0.5px;
         }
 
-        /* Column 2: AI Macro Review */
         .macro-text {
             font-size: 0.95rem;
             color: #E2E8F0;
@@ -232,33 +228,33 @@
 
         <section class="consensus-board">
             <div class="predict-block">
-                <h2>🤖 Quantitative Model</h2>
-                <div class="direction-value" id="model-dir">--</div>
+                <h2>🤖 Tactical Target Allocation</h2>
+                <div class="direction-value" id="model-dir">LOADING...</div>
             </div>
             <div class="predict-block">
-                <h2>🧠 Generative AI (Gemini)</h2>
-                <div class="direction-value" id="ai-dir">--</div>
+                <h2>🧠 Macro Regime Filter</h2>
+                <div class="direction-value" id="ai-dir">LOADING...</div>
             </div>
         </section>
 
         <section class="insights-grid">
             
             <div class="card">
-                <div class="card-title">Model Weights</div>
+                <div class="card-title">Model Weights & Accounting</div>
                 <div class="metric-box">
-                    <span class="metric-label">Probability (Direction Up)</span>
+                    <span class="metric-label">Model Raw Probability</span>
                     <span class="metric-value" id="model-conf">--%</span>
                 </div>
                 <div class="metric-box" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
-                    <span class="metric-label">AI Signal Weight</span>
-                    <span class="metric-value" id="ai-conf" style="color: var(--accent-gold);">--%</span>
+                    <span class="metric-label">Current Strategy Position</span>
+                    <span class="metric-value" id="strat-pos" style="color: var(--accent-gold);">--%</span>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">Macro & AI Analysis Reason</div>
+                <div class="card-title">Macro & AI Analysis Intelligence</div>
                 <div class="macro-text" id="ai-reason">
-                    Syncing neural network logs...
+                    Syncing framework logs over neural layers...
                 </div>
             </div>
 
@@ -284,42 +280,47 @@
                 if (data && data.length > 0) {
                     const record = data[0];
                     
-                    const setDirectionStyle = (elementId, value) => {
-                        const el = document.getElementById(elementId);
-                        el.innerText = value;
-                        if(value.includes("DOWN") || value.includes("ลง")) {
-                            el.style.color = "var(--accent-red)";
-                            el.style.textShadow = "0 0 30px rgba(244, 63, 94, 0.2)";
-                        } else {
-                            el.style.color = "var(--accent-green)";
-                            el.style.textShadow = "0 0 30px var(--accent-green-glow)";
-                        }
-                    };
-
-                    setDirectionStyle('model-dir', record.model_direction);
-                    setDirectionStyle('ai-dir', record.ai_direction);
-
-                    // 🔥 [จุดที่แก้ไข] ป้องกันการคำนวณทศนิยมหลอนสำหรับระบบ Random Forest 109% ตัวใหม่
-                    let rawModelConf = parseFloat(record.model_confidence);
-                    // ถ้าค่าที่ส่งมาจาก DB ต่ำกว่า 1 (เช่น 0.5185) ให้คูณ 100 เพื่อแปลงเป็นเปอร์เซ็นต์
-                    if (rawModelConf < 1) {
-                        rawModelConf = rawModelConf * 100;
+                    // 1. ตรรกะคุมสีน้ำหนักพอร์ตหลัก (LONG 100% = เขียว / HOLD 25% = แดงตั้งรับ)
+                    const modelDirEl = document.getElementById('model-dir');
+                    const targetPos = parseFloat(record.target_position); // อย่าลืมตั้งชื่อใน DB ให้ตรงกันนะบอส
+                    
+                    if (targetPos >= 1.0) {
+                        modelDirEl.innerText = "LONG 100%";
+                        modelDirEl.style.color = "var(--accent-green)";
+                        modelDirEl.style.textShadow = "0 0 30px var(--accent-green-glow)";
+                    } else {
+                        modelDirEl.innerText = "HOLD 25%";
+                        modelDirEl.style.color = "var(--accent-red)";
+                        modelDirEl.style.textShadow = "0 0 30px rgba(244, 63, 94, 0.2)";
                     }
+
+                    // 2. สถานะฝั่งแนวโน้มเทรนด์ใหญ่จากเส้นตัดกัน (Uptrend / Downtrend)
+                    const aiDirEl = document.getElementById('ai-dir');
+                    const emaCross = parseFloat(record.ema_crossover);
+                    if (emaCross > 0) {
+                        aiDirEl.innerText = "UPTREND";
+                        aiDirEl.style.color = "var(--accent-green)";
+                        aiDirEl.style.textShadow = "0 0 30px var(--accent-green-glow)";
+                    } else {
+                        aiDirEl.innerText = "DOWNTREND";
+                        aiDirEl.style.color = "var(--accent-red)";
+                        aiDirEl.style.textShadow = "0 0 30px rgba(244, 63, 94, 0.2)";
+                    }
+
+                    // 3. จัดการทศนิยมความมั่นใจตัวโมเดล Random Forest ดิบ
+                    let rawModelConf = parseFloat(record.model_confidence);
+                    if (rawModelConf < 1) { rawModelConf = rawModelConf * 100; }
                     document.getElementById('model-conf').innerText = rawModelConf.toFixed(2) + "%";
 
-                    // สำหรับฝั่ง AI Gemini คุมสถาปัตยกรรมเดิมอย่างปลอดภัย
-                    let rawAiConf = parseFloat(record.ai_confidence);
-                    if (rawAiConf < 1) {
-                        rawAiConf = rawAiConf * 100;
-                    }
-                    document.getElementById('ai-conf').innerText = rawAiConf.toFixed(0) + "%";
+                    // 4. แสดงน้ำหนักสัดส่วนพอร์ตปัจจุบันฝั่งขวา
+                    document.getElementById('strat-pos').innerText = (targetPos * 100).toFixed(0) + "%";
                     
-                    // แสดงเนื้อหาบทวิเคราะห์ภาษาไทย
+                    // 5. พ่นบทวิเคราะห์ภาษาไทย
                     let formattedReason = record.ai_reason.replace(/\n/g, '<br>');
                     formattedReason = formattedReason.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                     document.getElementById('ai-reason').innerHTML = formattedReason;
 
-                    // อัปเดตเวลาเวอร์ชันอังกฤษหรูๆ
+                    // 6. แสตมป์เวลาให้สวยงามตามเวลาเซิร์ฟเวอร์
                     const dateObj = new Date(record.created_at);
                     const timeString = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                     const dateString = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
