@@ -99,9 +99,9 @@ target_position = 1.0 if raw_proba >= current_thresh else base_exp
 
 # 4. CALL GEMINI AI GENERATION FOR MACRO INSIGHTS
 print("🧠 Triggering Gemini Intelligence analysis...")
-gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+gemini_model = genai.GenerativeModel('gemini-2.0-flash')
 
-# 🎯 ดึงค่าตัวเลขจริงหน้างานของวันนี้จาก DataFrame มารอส่งให้ Gemini ชำแหละข่าว
+# ดึงค่าตัวเลขจริงหน้างานของวันนี้จาก DataFrame มารอส่งให้ Gemini ชำแหละข่าวดนสดๆ
 latest_data = train_window.iloc[-1]
 current_dxy = float(latest_data['us_dollar'])
 current_bond = float(latest_data['us_10y_level'])
@@ -127,9 +127,9 @@ ai_reason_text = response.text
 # 5. PACK DATA HYBRID PAYLOAD & INJECT TO SUPABASE
 payload = {
     "model_direction": model_direction,
-    "ai_direction": "UP" if raw_proba >= 0.50 else "DOWN", # คานอำนาจเปรียบเทียบดั้งเดิมของบอส
+    "ai_direction": "UP" if raw_proba >= 0.50 else "DOWN",
     "model_confidence": float(raw_proba),
-    "ai_confidence": 0.80, # ล็อกเป็นค่าเฉลี่ยสัญญากลาง
+    "ai_confidence": 0.80, 
     "target_position": float(target_position),
     "ema_crossover": float(ema_crossover),
     "ai_reason": ai_reason_text
