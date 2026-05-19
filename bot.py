@@ -99,7 +99,7 @@ target_position = 1.0 if raw_proba >= current_thresh else base_exp
 
 # 4. CALL GEMINI AI GENERATION FOR MACRO INSIGHTS
 print("🧠 Triggering Gemini Intelligence analysis...")
-gemini_model = genai.GenerativeModel('gemini-2.0-flash')
+gemini_model = genai.GenerativeModel('gemini-2.5-flash')
 
 # ดึงค่าตัวเลขจริงหน้างานของวันนี้จาก DataFrame มารอส่งให้ Gemini ชำแหละข่าวดนสดๆ
 latest_data = train_window.iloc[-1]
