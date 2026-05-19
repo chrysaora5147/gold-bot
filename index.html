@@ -207,7 +207,6 @@
             font-weight: 600;
         }
 
-        /* 📊 CSS สำหรับตารางประวัติคำทำนาย V12 Rolling Horizontal Scoreboard */
         .scoreboard-section {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -355,7 +354,6 @@
 
         async function fetchLatestPrediction() {
             try {
-                // 1. ดึงชุดข้อมูลทั้งหมดเพื่อเอามาเรนเดอร์ทำตารางประวัติพยากรณ์ไปในตัว
                 const { data, error } = await _supabase
                     .from('gold_predictions')
                     .select('*')
@@ -364,17 +362,17 @@
                 if (error) throw error;
 
                 if (data && data.length > 0) {
-                    // แถวที่ 0 คือแถวล่าสุดปัจจุบันเอาไปพ่นแผงบอร์ดด้านบน
                     const record = data[0];
                     
                     const updateDirectionDisplay = (elementId, value) => {
                         const el = document.getElementById(elementId);
-                        el.innerText = value.toUpperCase();
+                        const cleanValue = value ? value.toUpperCase() : "--";
+                        el.innerText = cleanValue;
                         
-                        if(value.toUpperCase().includes("DOWN") || value.toUpperCase().includes("ลง")) {
+                        if(cleanValue.includes("DOWN") || cleanValue.includes("ลง")) {
                             el.style.color = "var(--accent-red)";
                             el.style.textShadow = "0 0 30px var(--accent-red-glow)";
-                        } else if(value.toUpperCase().includes("UP") || value.toUpperCase().includes("ขึ้น")) {
+                        } else if(cleanValue.includes("UP") || cleanValue.includes("ขึ้น")) {
                             el.style.color = "var(--accent-green)";
                             el.style.textShadow = "0 0 30px var(--accent-green-glow)";
                         } else {
@@ -383,7 +381,6 @@
                         }
                     };
 
-                    // 2. สกัดหาค่าอินดิเคเตอร์เชิงลึกตรงหน้างานจริง
                     let rawModelConf = parseFloat(record.model_confidence || 0);
                     if (rawModelConf < 1 && rawModelConf > 0) { rawModelConf = rawModelConf * 100; }
                     
@@ -394,25 +391,20 @@
                     const currentThresh = (emaCross > 0) ? uptrendThresh : downtrendThresh;
 
                     const realModelDir = (rawModelConf >= currentThresh) ? "UP" : "DOWN";
-
-                    // 3. ดึงค่าทิศทางอิสระของ AI แท้จริงจากหลังบ้าน
-                    const realAiDir = record.ai_direction ? record.ai_direction.toUpperCase() : ((targetPos >= 1.0) ? "UP" : "DOWN");
+                    const realAiDir = record.ai_direction ? record.ai_direction.toUpperCase() : "DOWN";
 
                     updateDirectionDisplay('model-dir', record.model_direction || realModelDir);
                     updateDirectionDisplay('ai-dir', realAiDir);
 
-                    // 4. พ่นตัวเลขเปอร์เซ็นต์ฝั่งคณิตศาสตร์ตามจริง
                     document.getElementById('model-conf').innerText = rawModelConf.toFixed(2) + "%";
                     
-                    // 🎯 5. ปลดล็อกร่างทอง! ดึงเปอร์เซ็นต์ความมั่นใจแท้จริงฝั่ง AI ที่สกัดจาก Gemini ตรงๆ ไม่ลอกเลขซ้ายมือแล้ว
+                    // 🎯 อ่านค่าดิบเพียวๆ จากคอลัมน์ ai_confidence ใน Supabase ตรงๆ (ไม่ผ่านสูตรคณิตศาสตร์สลับฝั่งหน้าบ้านอีกต่อไป)
                     let rawAiConf = parseFloat(record.ai_confidence || 0);
                     if (rawAiConf < 1 && rawAiConf > 0) { rawAiConf = rawAiConf * 100; }
-                    if (rawAiConf === 0 && realAiDir !== "HOLD") { rawAiConf = 50; }
                     
                     document.getElementById('ai-conf').innerText = rawAiConf.toFixed(0) + "%";
                     document.getElementById('ai-conf').style.color = "var(--accent-gold)";
 
-                    // 6. แสดงผลพอร์ตจัดสรรเงินทุนและ Regime ตลาดจริง
                     const portEl = document.getElementById('portfolio-weight');
                     portEl.innerText = (targetPos * 100).toFixed(0) + "% Gold";
                     if (targetPos >= 1.0) {
@@ -430,13 +422,11 @@
                         regimeEl.style.color = "var(--accent-red)";
                     }
                     
-                    // 7. ระบบความปลอดภัยกั้นข้อความขยะและเรนเดอร์บทวิเคราะห์ภาษาไทย
                     const reasonEl = document.getElementById('ai-reason');
                     if(record.ai_reason) {
                         let formattedReason = record.ai_reason;
-                        
-                        if(formattedReason.includes("Quant") || formattedReason.includes("EMA Crossover") || formattedReason.includes("ความน่าเชื่อถือ")) {
-                            reasonEl.innerHTML = "<strong>[SYSTEM NOTICE]</strong> กำลังรอรอบรีเซ็ตโควตารายวันจาก Google AI Studio เพื่อดึงบทวิเคราะห์ภาพรวมเศรษฐกิจมหภาค (DXY & Bond Yield) ชุดใหม่ล่าสุดเข้าสู่ระบบ Terminal...";
+                        if(formattedReason.includes("Quant") || formattedReason.includes("EMA Crossover")) {
+                            reasonEl.innerHTML = "<strong>[SYSTEM NOTICE]</strong> กำลังรอรอบรีเซ็ตโควตารายวันจาก Google AI Studio เพื่อดึงบทวิเคราะห์ภาพรวมเศรษฐกิจมหภาคล่าสุด...";
                         } else {
                             formattedReason = formattedReason.replace(/```json/g, '').replace(/```html/g, '').replace(/```/g, '');
                             formattedReason = formattedReason.replace(/\n/g, '<br>');
@@ -447,13 +437,11 @@
                         reasonEl.innerText = "กำลังเชื่อมโยงและรอรับข้อมูล Payload ล่าสุดจากเซิร์ฟเวอร์...";
                     }
 
-                    // 8. แสตมป์เวลาเซิร์ฟเวอร์ล่าสุด
                     const dateObj = new Date(record.created_at);
                     const timeString = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                     const dateString = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
                     document.getElementById('update-time').innerText = `UPDATED: ${dateString} ${timeString} (LIVE)`;
 
-                    // 🎯 9. เรนเดอร์ทำตารางประวัติและคำนวณสะสม Win Rate (Rolling Horzion V12)
                     renderScoreboard(data);
                 }
             } catch (err) {
@@ -462,10 +450,9 @@
             }
         }
 
-        // 🎯 ฟังก์ชันคำนวณและกางแผงตารางประวัติพยากรณ์ออโต้
         function renderScoreboard(records) {
             const tbody = document.getElementById('scoreboard-rows');
-            tbody.innerHTML = ''; // ล้างค่า Loading
+            tbody.innerHTML = ''; 
 
             let quantWins = 0, quantTotal = 0;
             let aiWins = 0, aiTotal = 0;
@@ -474,20 +461,15 @@
                 const dateObj = new Date(row.created_at);
                 const dateStr = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: '2-digit' });
                 
-                // แปลงค่า % สเกลทศนิยมเป็นเลขจำนวนเต็มสวยๆ
                 let qConf = parseFloat(row.model_confidence || 0);
                 if (qConf < 1) qConf *= 100;
                 
                 let aConf = parseFloat(row.ai_confidence || 0);
                 if (aConf < 1) aConf *= 100;
-                if (aConf === 0 && row.ai_direction) aConf = 50;
 
-                // ตรรกะสมมติระบบตัดคะแนนตรวจสอบ (วินัย Rolling รายวัน)
-                // ในอนาคตถ้าบอสเขียนตัวแปรเฉลยราคาเพิ่ม สามารถเปลี่ยนให้อ่านค่าจาก DB ตรงๆ ได้เลยครับ
                 let qResultClass = "text-pending", qResultText = "PENDING";
                 let aResultClass = "text-pending", aResultText = "PENDING";
 
-                // ดักจับข้อมูล Log แถวประวัติศาสตร์ที่ระบบเริ่มตรวจสอบเกรดตัดคะแนนแล้ว
                 if (row.quant_result) {
                     qResultText = row.quant_result.toUpperCase();
                     qResultClass = qResultText === "WIN" ? "text-win" : "text-loss";
@@ -501,7 +483,6 @@
                     aiTotal++;
                 }
 
-                // สร้างแถวข้อมูล HTML
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${dateStr}</td>
@@ -515,7 +496,6 @@
                 tbody.appendChild(tr);
             });
 
-            // อัปเดตการ์ดสรุป Live Win Rate มิติรวมด้านบนขวา
             const qRate = quantTotal > 0 ? ((quantWins / quantTotal) * 100).toFixed(1) : "0.0";
             const aRate = aiTotal > 0 ? ((aiWins / aiTotal) * 100).toFixed(1) : "0.0";
             document.getElementById('win-rate-summary').innerText = `LIVE STATS: QUANT WIN-RATE ${qRate}% | AI WIN-RATE ${aRate}%`;
