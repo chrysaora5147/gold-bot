@@ -4,8 +4,10 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 import google.generativeai as genai
 from supabase import create_client, Client
+import json
+import re
 
-print("🦿 กำลังคำนวณโมเดลคณิตศาสตร์ระบบไฮบริด V11 และเรียกใช้ Gemini API หลังบ้าน...")
+print("🦿 กำลังคำนวณโมเดลคณิตศาสตร์ระบบไฮบริด V12 และเรียกใช้ Gemini API หลังบ้าน...")
 
 # --- ค่า CONFIG ของบอส ---
 import os
@@ -101,13 +103,13 @@ target_position = 1.0 if raw_proba >= current_thresh else base_exp
 print("🧠 Triggering Gemini Intelligence analysis...")
 gemini_model = genai.GenerativeModel('gemini-2.5-flash')
 
-# ดึงค่าตัวเลขจริงหน้างานของวันนี้จาก DataFrame มารอส่งให้ Gemini ชำแหละข่าวดนสดๆ
 latest_data = train_window.iloc[-1]
 current_dxy = float(latest_data['us_dollar'])
 current_bond = float(latest_data['us_10y_level'])
 current_sp500 = float(latest_data['sp500'])
 current_vix = float(latest_data['vix_level'])
 
+# 🎯 ปรับ Prompt บังคับให้คายคำพยากรณ์ 5 วันทำการข้างหน้า และพ่น % ความมั่นใจเป็น JSON แท็กปิดท้าย
 prompt = f"""
 คุณเป็นนักวิเคราะห์ราคาทองคำระดับโลกและผู้เชี่ยวชาญด้านเศรษฐกิจมหภาค (Macro Strategist)
 นี่คือข้อมูลตัวเลขดัชนีและปัจจัยตลาดทุนปัจจุบัน:
@@ -120,25 +122,49 @@ prompt = f"""
 1. จงประมวลผลตัวเลขดัชนีเหล่านี้ ร่วมกับสถานการณ์ข่าวสารเศรษฐกิจ ภูมิรัฐศาสตร์ (Geopolitics) และความรู้สึกเสี่ยง (Market Sentiment) ล่าสุดของโลกในนาทีนี้
 2. วิเคราะห์และพยากรณ์แนวโน้มสะสมว่า "ภายในอีก 5 วันทำการข้างหน้า" ปัจจัยสายข่าวและกลไกเงินทุนเหล่านี้จะขับเคลื่อนให้ราคาทองคำปิด "สูงขึ้น (UP)" หรือ "ลดลง (DOWN)" เมื่อเทียบกับวันนี้
 3. สรุปอินไซต์สั้นกระชับเป็นภาษาไทย ความยาวไม่เกิน 4 บรรทัด เขียนแยกเป็นข้อๆ 1, 2, 3 เน้นที่กลไกการไหลของเงินทุนและข่าวสารโลก ห้ามพ่นศัพท์เทคนิคของโมเดล Quant ซ้ำซากเด็ดขาด
+
+4. บรรทัดสุดท้ายสุด ให้พิมพ์ผลสรุปทิศทาง (UP หรือ DOWN) และระดับความมั่นใจของคุณเป็นตัวเลขเปอร์เซ็นต์ (0-100) ให้อยู่ในรูปแบบ JSON บรรทัดเดียวปิดท้ายแบบนี้เท่านั้น ห้ามมีตัวอักษรอื่นปนในบรรทัดนั้น:
+{{"direction": "ทิศทางที่พยากรณ์", "confidence": ตัวเลขเปอร์เซ็นต์}}
 """
 
 response = gemini_model.generate_content(prompt)
-ai_reason_text = response.text
+full_text = response.text
+
+# 🎯 สกัดเอา JSON ลับออกจากบทวิเคราะห์ข่าวสาร
+ai_direction_extracted = "UP" if raw_proba >= 0.50 else "DOWN" # ค่าเผื่อเลือก Default
+ai_confidence_extracted = 0.50
+
+try:
+    lines = [l.strip() for l in full_text.strip().split('\n') if l.strip()]
+    json_line = lines[-1]
+    # ดึงค่าผ่าน Regex เผื่อ AI แถม Markdown Block มา
+    match = re.search(r'\{.*\}', json_line)
+    if match:
+        json_data = json.loads(match.group(0))
+        ai_direction_extracted = json_data.get("direction", ai_direction_extracted).upper()
+        ai_confidence_extracted = float(json_data.get("confidence", 50)) / 100.0
+    
+    # ลบเนื้อหาบรรทัด JSON ทิ้งก่อนส่งไปหน้าเว็บ จะได้โชว์แค่บทวิเคราะห์หล่อๆ
+    cleaned_lines = [l for l in lines if not l.startswith('{') and not l.endswith('}')]
+    ai_reason_text = '\n'.join(cleaned_lines)
+except Exception as e:
+    print(f"⚠️ Parsing JSON error: {e}")
+    ai_reason_text = full_text
 
 # 5. PACK DATA HYBRID PAYLOAD & INJECT TO SUPABASE
 payload = {
     "model_direction": model_direction,
-    "ai_direction": "UP" if raw_proba >= 0.50 else "DOWN",
+    "ai_direction": ai_direction_extracted,
     "model_confidence": float(raw_proba),
-    "ai_confidence": 0.80, 
+    "ai_confidence": float(ai_confidence_extracted), # 🎯 ส่งเลขที่ AI คิดจริง ๆ ขึ้นตาราง
     "target_position": float(target_position),
     "ema_crossover": float(ema_crossover),
     "ai_reason": ai_reason_text
 }
 
-print("🚀 Launching V11 Live Data payload to Supabase right now...")
+print("🚀 Launching V12 Live Data payload to Supabase right now...")
 supabase.table('gold_predictions').insert(payload).execute()
 
 print("*" * 40)
-print("🎉 [สำเร็จ!] สมองกลเวอร์ชัน V11 คำนวณและยิงเข้าหน้าเว็บของบอสเรียบร้อยแล้ว!")
+print("🎉 [สำเร็จ!] สมองกลเวอร์ชัน V12 ยิงค่าความมั่นใจแท้จริงของ Gemini เข้าหน้าเว็บเรียบร้อยแล้ว!")
 print("*" * 40)
