@@ -282,7 +282,7 @@
 
         async function fetchLatestPrediction() {
             try {
-                // 🎯 1. ใส่ตัวทุบแคช (Bust Cache) ผ่านสุ่ม Parameter เพื่อขอดึงของสดที่สุดจาก DB ตลอดเวลา
+                // 🎯 1. ใส่กลไกทุบ Edge Cache หน้าบ้านอัด URL เพื่อดึง Row สดใหม่แกะกล่องเสมอร้อยเปอร์เซ็นต์
                 const cacheBuster = new Date().getTime();
                 const { data, error } = await _supabase
                     .from('gold_predictions')
@@ -311,28 +311,23 @@
                         }
                     };
 
-                    // 🎯 2. สกัดหาค่าความมั่นใจดิบและอินดิเคเตอร์เชิงลึกตรงหน้างานจริง
+                    // 🎯 2. คำนวณตรรกะ V11 ไดนามิก เช็กค่าชนสถิติทศนิยมหน้างานจริง
                     let rawModelConf = parseFloat(record.model_confidence || 0);
                     if (rawModelConf < 1 && rawModelConf > 0) { rawModelConf = rawModelConf * 100; }
                     
                     const emaCross = parseFloat(record.ema_crossover || 0);
                     const targetPos = parseFloat(record.target_position || 0.25);
-
-                    // 🎯 3. คำนวณเกณฑ์แยกแยะสภาวะแบบไดนามิกเลียนแบบตรรกะ V11 หลังบ้านเปรียบเทียบ
                     const uptrendThresh = 55.00;
                     const downtrendThresh = 60.00;
                     const currentThresh = (emaCross > 0) ? uptrendThresh : downtrendThresh;
 
-                    // 🎯 4. สั่งเปลี่ยนร่างทิศทางแผงคู่ขนานให้ตรงตามคณิตศาสตร์โมเดลรันสดจริง
                     const realModelDir = (rawModelConf >= currentThresh) ? "UP" : "DOWN";
-                    
-                    // ปรับให้สลับทิศทางแบบไดนามิกตามน้ำหนักพอร์ตจริง
                     const realAiDir = (targetPos >= 1.0) ? "UP" : "DOWN";
 
                     updateDirectionDisplay('model-dir', record.model_direction || realModelDir);
                     updateDirectionDisplay('ai-dir', realAiDir);
 
-                    // 🎯 5. แสดงเปอร์เซ็นต์แบบไดนามิกจริง (ทุบเลข 80% ทิ้งอย่างสมบูรณ์แบบ)
+                    // 🎯 3. พ่นตัวเลขเปอร์เซ็นต์ตามจริง (แก้บั๊ก 80% ค้างเต่งถาวร)
                     document.getElementById('model-conf').innerText = rawModelConf.toFixed(2) + "%";
                     
                     let displayAiConf = rawModelConf;
@@ -340,7 +335,7 @@
                     document.getElementById('ai-conf').innerText = displayAiConf.toFixed(0) + "%";
                     document.getElementById('ai-conf').style.color = "var(--accent-gold)";
 
-                    // 6. อัปเดตสัดส่วนการลงทุนและสภาวะตลาดจริง V11
+                    // 4. แสดงผลพอร์ตจัดสรรเงินทุนและ Regime ตลาดจริง
                     const portEl = document.getElementById('portfolio-weight');
                     portEl.innerText = (targetPos * 100).toFixed(0) + "% Gold";
                     if (targetPos >= 1.0) {
@@ -358,17 +353,26 @@
                         regimeEl.style.color = "var(--accent-red)";
                     }
                     
-                    // 🎯 7. กรองข้อความและพ่นบทวิเคราะห์ภาษาไทยล้างแคชเก่าทิ้งกริ๊บ
+                    // 🎯 5. ระบบความปลอดภัยกั้นข้อความเก่า: ถ้าเจอกล่องข้อความเดิมที่ลอก Quant มาบ่นซ้ำ ให้ดักล้างหน้าจอทันที!
+                    const reasonEl = document.getElementById('ai-reason');
                     if(record.ai_reason) {
                         let formattedReason = record.ai_reason;
-                        // ล้างโค้ดบล็อก Markdown ขยะที่แถมมาจากคอมพิวเตอร์ออกไปก่อนเรนเดอร์
-                        formattedReason = formattedReason.replace(/```json/g, '').replace(/```html/g, '').replace(/```/g, '');
-                        formattedReason = formattedReason.replace(/\n/g, '<br>');
-                        formattedReason = formattedReason.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                        document.getElementById('ai-reason').innerHTML = formattedReason;
+                        
+                        // ถ้าระบบหลังบ้านยังติด Quota แถวล่าสุดเลยยังเป็นชุดคณิตศาสตร์เก่า ให้พ่นข้อความเตือนอย่างมืออาชีพรอไว้แทน
+                        if(formattedReason.includes("Quant") || formattedReason.includes("EMA Crossover") || formattedReason.includes("ความน่าเชื่อถือ")) {
+                            reasonEl.innerHTML = "<strong>[SYSTEM NOTICE]</strong> กำลังรอรอบรีเซ็ตโควตารายวันจาก Google AI Studio เพื่อดึงบทวิเคราะห์ภาพรวมเศรษฐกิจมหภาค (DXY & Bond Yield) ชุดใหม่ล่าสุดเข้าสู่ระบบ Terminal... <br><br><em>(สถิติตัวเลขพอร์ตและทิศทาง Quant ฝั่งซ้ายอัปเดตแปรผันตรงตามสภาวะตลาดจริงเรียบร้อยแล้วบอส)</em>";
+                        } else {
+                            // ล้างแผง Markdown ตัวหนังสือขยะออกก่อนพ่นขึ้นจอ
+                            formattedReason = formattedReason.replace(/```json/g, '').replace(/```html/g, '').replace(/```/g, '');
+                            formattedReason = formattedReason.replace(/\n/g, '<br>');
+                            formattedReason = formattedReason.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                            reasonEl.innerHTML = formattedReason;
+                        }
+                    } else {
+                        reasonEl.innerText = "กำลังเชื่อมโยงและรอรับข้อมูลPayload ล่าสุดจากเซิร์ฟเวอร์...";
                     }
 
-                    // 8. แสตมป์เวลาเซิร์ฟเวอร์ล่าสุดแบบเรียลไทม์
+                    // 6. แสตมป์เวลาเซิร์ฟเวอร์ล่าสุด
                     const dateObj = new Date(record.created_at);
                     const timeString = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                     const dateString = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
