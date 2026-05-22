@@ -12,6 +12,7 @@ print("🦿 กำลังคำนวณโมเดลคณิตศาส�
 
 # --- ค่า CONFIG ของบอส ---
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+RISK_PROFILE = os.getenv("RISK_PROFILE", "balanced").strip().lower()
 SUPABASE_URL = "https://vsgbfcatnpytrsshdbkr.supabase.co"
 SUPABASE_KEY = "sb_publishable_KpdMpkgsChvu0pR_Gh1y8Q_0LxccpPq"
 
@@ -73,6 +74,40 @@ features = [
     'ema_crossover', 'dist_from_ema50'
 ]
 
+RISK_PROFILES = {
+    "conservative": {
+        "base_exp": 0.15,
+        "max_exp": 0.65,
+        "trend_bonus": 0.05,
+        "vol_target": 0.010,
+        "threshold_adjust": 0.030,
+    },
+    "balanced": {
+        "base_exp": 0.25,
+        "max_exp": 0.90,
+        "trend_bonus": 0.10,
+        "vol_target": 0.012,
+        "threshold_adjust": 0.000,
+    },
+    "aggressive": {
+        "base_exp": 0.35,
+        "max_exp": 1.00,
+        "trend_bonus": 0.15,
+        "vol_target": 0.018,
+        "threshold_adjust": -0.030,
+    },
+}
+
+
+def normalize_risk_profile(profile):
+    if profile in RISK_PROFILES:
+        return profile
+    print(f"⚠️ Unknown RISK_PROFILE={profile!r}; falling back to balanced")
+    return "balanced"
+
+
+RISK_PROFILE = normalize_risk_profile(RISK_PROFILE)
+
 # Keep the live feature set separate from the supervised training set.
 # The last rows do not have a known 5-day future price yet, so dropping target
 # NaNs before selecting X_today would accidentally move "today" into the past.
@@ -82,33 +117,36 @@ df['target'] = (df['future_gold'] > df['gold']).astype(int)
 model_frame = df.dropna(subset=features + ['future_gold', 'target']).copy()
 
 
-def threshold_for_regime(ema_value):
-    return 0.550 if ema_value > 0 else 0.600
+def threshold_for_regime(ema_value, profile="balanced"):
+    base_threshold = 0.550 if ema_value > 0 else 0.600
+    adjustment = RISK_PROFILES[normalize_risk_profile(profile)]["threshold_adjust"]
+    return float(min(max(base_threshold + adjustment, 0.500), 0.700))
 
 
-def signal_from_probability(probability, ema_value):
-    return "UP" if probability >= threshold_for_regime(ema_value) else "DOWN"
+def signal_from_probability(probability, ema_value, profile="balanced"):
+    return "UP" if probability >= threshold_for_regime(ema_value, profile) else "DOWN"
 
 
-def calculate_target_position(probability, threshold, ema_value, volatility):
+def calculate_target_position(probability, threshold, ema_value, volatility, profile="balanced"):
     """Volatility-aware sizing for research signals.
 
     This keeps gold as a strategic allocation but avoids jumping straight to
     100% exposure from a single classifier output.
     """
-    base_exp = 0.25
-    max_exp = 0.85
+    params = RISK_PROFILES[normalize_risk_profile(profile)]
+    base_exp = params["base_exp"]
+    max_exp = params["max_exp"]
 
     if probability < threshold:
         return base_exp
 
     confidence_edge = min(max((probability - threshold) / max(1 - threshold, 1e-9), 0), 1)
-    trend_bonus = 0.10 if ema_value > 0 else 0.0
+    trend_bonus = params["trend_bonus"] if ema_value > 0 else 0.0
 
     # GC=F daily volatility is usually around 0.8%-1.6%; scale down when noisy.
     vol_penalty = 1.0
     if pd.notna(volatility) and volatility > 0:
-        vol_penalty = min(1.0, 0.012 / float(volatility))
+        vol_penalty = min(1.0, params["vol_target"] / float(volatility))
 
     position = base_exp + (max_exp - base_exp) * confidence_edge * vol_penalty + trend_bonus
     return float(min(max(position, base_exp), max_exp))
@@ -136,7 +174,7 @@ def run_walk_forward_backtest(history, feature_cols, lookback=252 * 3, test_days
 
         proba = float(clf.predict_proba(test[feature_cols])[0][1])
         ema_value = float(test['ema_crossover'].iloc[0])
-        pred = signal_from_probability(proba, ema_value)
+        pred = signal_from_probability(proba, ema_value, RISK_PROFILE)
         actual = "UP" if int(test['target'].iloc[0]) == 1 else "DOWN"
         fwd_return = float(test['future_gold'].iloc[0] / test['gold'].iloc[0] - 1)
 
@@ -237,16 +275,16 @@ gold_volatility = float(latest_feature_row['gold_volatility'])
 signal_date = feature_frame.index[-1]
 signal_price = float(latest_feature_row['gold'])
 
-current_thresh = threshold_for_regime(ema_crossover)
-model_direction = signal_from_probability(raw_proba, ema_crossover)
+current_thresh = threshold_for_regime(ema_crossover, RISK_PROFILE)
+model_direction = signal_from_probability(raw_proba, ema_crossover, RISK_PROFILE)
 
 # ตรรกะคุมพอร์ต Allocation แบบลดความเสี่ยง ไม่โดด 100% จากสัญญาณเดียว
-target_position = calculate_target_position(raw_proba, current_thresh, ema_crossover, gold_volatility)
+target_position = calculate_target_position(raw_proba, current_thresh, ema_crossover, gold_volatility, RISK_PROFILE)
 print(
     f"🎯 Live signal date={signal_date.date()} | "
     f"GC=F={signal_price:.2f} | proba={raw_proba:.3f} | "
     f"threshold={current_thresh:.3f} | direction={model_direction} | "
-    f"target_position={target_position:.1%}"
+    f"risk_profile={RISK_PROFILE} | target_position={target_position:.1%}"
 )
 
 # 4. CALL GEMINI AI GENERATION FOR MACRO INSIGHTS
@@ -318,6 +356,7 @@ if backtest_summary:
         f"5D walk-forward win rate: {backtest_summary['win_rate']:.1%} "
         f"over {backtest_summary['total']} samples | "
         f"avg signal 5D return: {backtest_summary['avg_strategy_return']:.3%} | "
+        f"risk profile: {RISK_PROFILE} | "
         f"target position: {target_position:.1%}"
     )
 else:
@@ -325,6 +364,7 @@ else:
         "\n\n[Quant audit] "
         f"Live signal date: {signal_date.date()} | "
         f"not enough history for walk-forward audit | "
+        f"risk profile: {RISK_PROFILE} | "
         f"target position: {target_position:.1%}"
     )
 ai_reason_text = ai_reason_text + audit_line
