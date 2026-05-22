@@ -24,8 +24,11 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 BANGKOK_TZ = ZoneInfo("Asia/Bangkok")
 
 
-def should_skip_scheduled_duplicate():
-    if os.getenv("GITHUB_EVENT_NAME") != "schedule":
+def should_skip_daily_duplicate():
+    force_run = os.getenv("FORCE_RUN", "false").strip().lower() == "true"
+    daily_dedupe = os.getenv("DAILY_DEDUPE", "true").strip().lower() == "true"
+
+    if force_run or not daily_dedupe:
         return False
 
     now_bangkok = datetime.now(BANGKOK_TZ)
@@ -49,7 +52,7 @@ def should_skip_scheduled_duplicate():
 
     if existing.data:
         print(
-            "⏭️ Scheduled duplicate guard: "
+            "⏭️ Daily duplicate guard: "
             f"already has a Bangkok-date signal for {now_bangkok.date()}, skipping insert."
         )
         return True
@@ -57,7 +60,7 @@ def should_skip_scheduled_duplicate():
     return False
 
 
-if should_skip_scheduled_duplicate():
+if should_skip_daily_duplicate():
     raise SystemExit(0)
 
 # 1. FETCH HISTORICAL DATA FOR ROLLING & FEATURE ENGINEERING
