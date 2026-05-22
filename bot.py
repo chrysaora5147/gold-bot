@@ -377,6 +377,7 @@ payload = {
     "ai_confidence": float(ai_confidence_extracted),
     "target_position": float(target_position),
     "ema_crossover": float(ema_crossover),
+    "actual_start_price": float(signal_price),
     "ai_reason": ai_reason_text
 }
 
