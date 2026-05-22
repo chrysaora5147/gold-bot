@@ -33,4 +33,5 @@ jobs:
         env:
           GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           RISK_PROFILE: ${{ vars.RISK_PROFILE || 'balanced' }}
+          POSITION_MODE: ${{ vars.POSITION_MODE || 'overlay_80_40' }}
         run: python bot.py
