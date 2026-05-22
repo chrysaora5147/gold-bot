@@ -215,6 +215,73 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
 
+        .portfolio-section {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .portfolio-card {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            background: rgba(7, 10, 17, 0.35);
+        }
+
+        .portfolio-name {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
+        .portfolio-equity {
+            font-size: 2.4rem;
+            line-height: 1.1;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .portfolio-stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.85rem 1rem;
+        }
+
+        .portfolio-stat-label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .portfolio-stat-value {
+            display: block;
+            color: #E2E8F0;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-top: 0.15rem;
+        }
+
+        .portfolio-note {
+            color: var(--text-secondary);
+            font-family: 'Sarabun', sans-serif;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
         .table-responsive {
             width: 100%;
             overflow-x: auto;
@@ -255,6 +322,11 @@
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        @media (max-width: 900px) {
+            .portfolio-grid { grid-template-columns: 1fr; }
+            .portfolio-equity { font-size: 2rem; }
         }
     </style>
 </head>
@@ -315,6 +387,63 @@
                 </div>
             </div>
 
+        </section>
+
+        <section class="portfolio-section">
+            <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                <span>🧾 Forward Test: Live Paper Portfolios</span>
+                <span id="portfolio-summary" style="color: var(--accent-gold); font-size: 0.85rem; letter-spacing: 0.5px;">WAITING FOR CLOSED SIGNALS...</span>
+            </div>
+
+            <div class="portfolio-grid">
+                <div class="portfolio-card">
+                    <div class="portfolio-name">Quant Model Portfolio</div>
+                    <div class="portfolio-equity" id="quant-equity">100.00</div>
+                    <div class="portfolio-stats">
+                        <div>
+                            <span class="portfolio-stat-label">Total Return</span>
+                            <span class="portfolio-stat-value" id="quant-return">0.00%</span>
+                        </div>
+                        <div>
+                            <span class="portfolio-stat-label">Max Drawdown</span>
+                            <span class="portfolio-stat-value" id="quant-dd">0.00%</span>
+                        </div>
+                        <div>
+                            <span class="portfolio-stat-label">Closed Trades</span>
+                            <span class="portfolio-stat-value" id="quant-trades">0</span>
+                        </div>
+                        <div>
+                            <span class="portfolio-stat-label">Win Rate</span>
+                            <span class="portfolio-stat-value" id="quant-portfolio-win">0.0%</span>
+                        </div>
+                    </div>
+                    <div class="portfolio-note">ใช้ target portfolio weight จาก Quant signal ของแต่ละรอบ แล้วทบผลตอบแทน 5 วันเมื่อครบกำหนดตรวจข้อสอบ</div>
+                </div>
+
+                <div class="portfolio-card">
+                    <div class="portfolio-name">Gemini Macro Portfolio</div>
+                    <div class="portfolio-equity" id="gemini-equity">100.00</div>
+                    <div class="portfolio-stats">
+                        <div>
+                            <span class="portfolio-stat-label">Total Return</span>
+                            <span class="portfolio-stat-value" id="gemini-return">0.00%</span>
+                        </div>
+                        <div>
+                            <span class="portfolio-stat-label">Max Drawdown</span>
+                            <span class="portfolio-stat-value" id="gemini-dd">0.00%</span>
+                        </div>
+                        <div>
+                            <span class="portfolio-stat-label">Closed Trades</span>
+                            <span class="portfolio-stat-value" id="gemini-trades">0</span>
+                        </div>
+                        <div>
+                            <span class="portfolio-stat-label">Win Rate</span>
+                            <span class="portfolio-stat-value" id="gemini-portfolio-win">0.0%</span>
+                        </div>
+                    </div>
+                    <div class="portfolio-note">ถ้า Gemini ตอบ UP จะถือทองตาม confidence, ถ้าตอบ DOWN จะถือเงินสด รอวัดผลเมื่อครบ 5 วัน</div>
+                </div>
+            </div>
         </section>
 
         <section class="scoreboard-section">
@@ -443,6 +572,7 @@
                     const dateString = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
                     document.getElementById('update-time').innerText = `UPDATED: ${dateString} ${timeString} (LIVE)`;
 
+                    renderForwardPortfolios(data);
                     renderScoreboard(data);
                 }
             } catch (err) {
@@ -500,6 +630,93 @@
             const qRate = quantTotal > 0 ? ((quantWins / quantTotal) * 100).toFixed(1) : "0.0";
             const aRate = aiTotal > 0 ? ((aiWins / aiTotal) * 100).toFixed(1) : "0.0";
             document.getElementById('win-rate-summary').innerText = `LIVE STATS: QUANT WIN-RATE ${qRate}% | AI WIN-RATE ${aRate}%`;
+        }
+
+        function normalizeConfidence(value, fallback = 1) {
+            let confidence = parseFloat(value || fallback);
+            if (confidence > 1) confidence = confidence / 100;
+            return Math.max(0, Math.min(1, confidence));
+        }
+
+        function maxDrawdown(equityCurve) {
+            let peak = equityCurve.length ? equityCurve[0] : 100;
+            let worst = 0;
+            equityCurve.forEach(value => {
+                peak = Math.max(peak, value);
+                if (peak > 0) {
+                    worst = Math.min(worst, (value / peak) - 1);
+                }
+            });
+            return worst;
+        }
+
+        function setReturnColor(element, value) {
+            element.style.color = value >= 0 ? "var(--accent-green)" : "var(--accent-red)";
+        }
+
+        function renderForwardPortfolios(records) {
+            const closedRecords = records
+                .filter(row => row.actual_start_price && row.actual_end_price)
+                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            let quantEquity = 100;
+            let geminiEquity = 100;
+            const quantCurve = [quantEquity];
+            const geminiCurve = [geminiEquity];
+            let quantWins = 0;
+            let geminiWins = 0;
+
+            closedRecords.forEach(row => {
+                const startPrice = parseFloat(row.actual_start_price);
+                const endPrice = parseFloat(row.actual_end_price);
+                if (!startPrice || !endPrice) return;
+
+                const goldReturn = (endPrice / startPrice) - 1;
+                const quantExposure = Math.max(0, Math.min(1, parseFloat(row.target_position || 0)));
+                const geminiConfidence = normalizeConfidence(row.ai_confidence, 1);
+                const geminiExposure = (row.ai_direction || "").toUpperCase() === "UP" ? geminiConfidence : 0;
+
+                const quantReturn = quantExposure * goldReturn;
+                const geminiReturn = geminiExposure * goldReturn;
+
+                quantEquity = quantEquity * (1 + quantReturn);
+                geminiEquity = geminiEquity * (1 + geminiReturn);
+                quantCurve.push(quantEquity);
+                geminiCurve.push(geminiEquity);
+
+                if (quantReturn > 0) quantWins++;
+                if (geminiReturn > 0) geminiWins++;
+            });
+
+            const quantTotalReturn = (quantEquity / 100) - 1;
+            const geminiTotalReturn = (geminiEquity / 100) - 1;
+            const quantWinRate = closedRecords.length ? quantWins / closedRecords.length : 0;
+            const geminiWinRate = closedRecords.length ? geminiWins / closedRecords.length : 0;
+            const quantDD = maxDrawdown(quantCurve);
+            const geminiDD = maxDrawdown(geminiCurve);
+
+            document.getElementById('quant-equity').innerText = quantEquity.toFixed(2);
+            document.getElementById('gemini-equity').innerText = geminiEquity.toFixed(2);
+            document.getElementById('quant-return').innerText = (quantTotalReturn * 100).toFixed(2) + "%";
+            document.getElementById('gemini-return').innerText = (geminiTotalReturn * 100).toFixed(2) + "%";
+            document.getElementById('quant-dd').innerText = (quantDD * 100).toFixed(2) + "%";
+            document.getElementById('gemini-dd').innerText = (geminiDD * 100).toFixed(2) + "%";
+            document.getElementById('quant-trades').innerText = closedRecords.length;
+            document.getElementById('gemini-trades').innerText = closedRecords.length;
+            document.getElementById('quant-portfolio-win').innerText = (quantWinRate * 100).toFixed(1) + "%";
+            document.getElementById('gemini-portfolio-win').innerText = (geminiWinRate * 100).toFixed(1) + "%";
+
+            setReturnColor(document.getElementById('quant-equity'), quantTotalReturn);
+            setReturnColor(document.getElementById('gemini-equity'), geminiTotalReturn);
+            setReturnColor(document.getElementById('quant-return'), quantTotalReturn);
+            setReturnColor(document.getElementById('gemini-return'), geminiTotalReturn);
+            document.getElementById('quant-dd').style.color = quantDD < 0 ? "var(--accent-red)" : "var(--text-primary)";
+            document.getElementById('gemini-dd').style.color = geminiDD < 0 ? "var(--accent-red)" : "var(--text-primary)";
+
+            document.getElementById('portfolio-summary').innerText =
+                closedRecords.length > 0
+                    ? `START 100 | CLOSED ${closedRecords.length} SIGNALS | 5D FORWARD TEST`
+                    : "WAITING FOR FIRST CLOSED 5D SIGNAL";
         }
 
         fetchLatestPrediction();
