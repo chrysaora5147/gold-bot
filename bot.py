@@ -7,6 +7,8 @@ from supabase import create_client, Client
 import json
 import re
 import os
+from datetime import datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 print("🦿 กำลังคำนวณโมเดลคณิตศาสตร์ระบบไฮบริด V12 และเรียกใช้ Gemini API หลังบ้าน...")
 
@@ -19,6 +21,44 @@ SUPABASE_KEY = "sb_publishable_KpdMpkgsChvu0pR_Gh1y8Q_0LxccpPq"
 
 genai.configure(api_key=GOOGLE_API_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+BANGKOK_TZ = ZoneInfo("Asia/Bangkok")
+
+
+def should_skip_scheduled_duplicate():
+    if os.getenv("GITHUB_EVENT_NAME") != "schedule":
+        return False
+
+    now_bangkok = datetime.now(BANGKOK_TZ)
+    start_bangkok = datetime.combine(now_bangkok.date(), time.min, tzinfo=BANGKOK_TZ)
+    end_bangkok = start_bangkok + timedelta(days=1)
+    start_utc = start_bangkok.astimezone(timezone.utc).isoformat()
+    end_utc = end_bangkok.astimezone(timezone.utc).isoformat()
+
+    try:
+        existing = (
+            supabase.table("gold_predictions")
+            .select("id, created_at")
+            .gte("created_at", start_utc)
+            .lt("created_at", end_utc)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        print(f"⚠️ Duplicate guard check failed; continuing run: {exc}")
+        return False
+
+    if existing.data:
+        print(
+            "⏭️ Scheduled duplicate guard: "
+            f"already has a Bangkok-date signal for {now_bangkok.date()}, skipping insert."
+        )
+        return True
+
+    return False
+
+
+if should_skip_scheduled_duplicate():
+    raise SystemExit(0)
 
 # 1. FETCH HISTORICAL DATA FOR ROLLING & FEATURE ENGINEERING
 print("📥 Fetching historical data...")
