@@ -1,12 +1,13 @@
 name: Gold Bot Daily Run
 
 on:
-  schedule:
-    # 🎯 0-4 (อาทิตย์-พฤหัส UTC) = จันทร์-ศุกร์ ไทย
-    # 🎯 GitHub cron ไม่การันตีเวลาตรงเป๊ะ จึงยิงหลายจังหวะช่วง 05:05-05:35 ไทย
-    # 🎯 bot.py มีกันซ้ำ: scheduled run ที่เหลือของวันเดียวกันจะหยุดเอง
-    - cron: '5,15,25,35 22 * * 0-4'
   workflow_dispatch:
+    inputs:
+      force_run:
+        description: "Run even if today's Bangkok-date signal already exists"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   run-bot:
@@ -35,4 +36,6 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           RISK_PROFILE: ${{ vars.RISK_PROFILE || 'balanced' }}
           POSITION_MODE: ${{ vars.POSITION_MODE || 'overlay_80_40' }}
+          DAILY_DEDUPE: "true"
+          FORCE_RUN: ${{ github.event.inputs.force_run || 'false' }}
         run: python bot.py
