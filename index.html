@@ -392,7 +392,7 @@
         <section class="portfolio-section">
             <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                 <span>🧾 Forward Test: Live Paper Portfolios</span>
-                <span id="portfolio-summary" style="color: var(--accent-gold); font-size: 0.85rem; letter-spacing: 0.5px;">WAITING FOR CLOSED SIGNALS...</span>
+                <span id="portfolio-summary" style="color: var(--accent-gold); font-size: 0.85rem; letter-spacing: 0.5px;">WAITING FOR DAILY SIGNALS...</span>
             </div>
 
             <div class="portfolio-grid">
@@ -409,7 +409,7 @@
                             <span class="portfolio-stat-value" id="quant-dd">0.00%</span>
                         </div>
                         <div>
-                            <span class="portfolio-stat-label">Closed Trades</span>
+                            <span class="portfolio-stat-label">Rebalance Days</span>
                             <span class="portfolio-stat-value" id="quant-trades">0</span>
                         </div>
                         <div>
@@ -417,7 +417,7 @@
                             <span class="portfolio-stat-value" id="quant-portfolio-win">0.0%</span>
                         </div>
                     </div>
-                    <div class="portfolio-note">ใช้ target portfolio weight จาก Quant signal ของแต่ละรอบ แล้วทบผลตอบแทน 5 วันเมื่อครบกำหนดตรวจข้อสอบ</div>
+                    <div class="portfolio-note">ทุกครั้งที่มีสัญญาณใหม่ พอร์ตจะปรับน้ำหนักทองตาม target position ล่าสุด แล้วถือจนถึงสัญญาณถัดไป</div>
                 </div>
 
                 <div class="portfolio-card">
@@ -433,7 +433,7 @@
                             <span class="portfolio-stat-value" id="gemini-dd">0.00%</span>
                         </div>
                         <div>
-                            <span class="portfolio-stat-label">Closed Trades</span>
+                            <span class="portfolio-stat-label">Rebalance Days</span>
                             <span class="portfolio-stat-value" id="gemini-trades">0</span>
                         </div>
                         <div>
@@ -441,7 +441,7 @@
                             <span class="portfolio-stat-value" id="gemini-portfolio-win">0.0%</span>
                         </div>
                     </div>
-                    <div class="portfolio-note">ถ้า Gemini ตอบ UP จะถือทองตาม confidence, ถ้าตอบ DOWN จะถือเงินสด รอวัดผลเมื่อครบ 5 วัน</div>
+                    <div class="portfolio-note">ทุกครั้งที่มีสัญญาณใหม่ ถ้า Gemini ตอบ UP จะถือทองตาม confidence; ถ้าตอบ DOWN จะถือเงินสดจนถึงสัญญาณถัดไป</div>
                 </div>
             </div>
         </section>
@@ -655,8 +655,8 @@
         }
 
         function renderForwardPortfolios(records) {
-            const closedRecords = records
-                .filter(row => row.actual_start_price && row.actual_end_price)
+            const signalRecords = records
+                .filter(row => row.actual_start_price)
                 .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
             let quantEquity = 100;
@@ -665,11 +665,14 @@
             const geminiCurve = [geminiEquity];
             let quantWins = 0;
             let geminiWins = 0;
+            let intervals = 0;
 
-            closedRecords.forEach(row => {
+            for (let index = 0; index < signalRecords.length - 1; index++) {
+                const row = signalRecords[index];
+                const nextRow = signalRecords[index + 1];
                 const startPrice = parseFloat(row.actual_start_price);
-                const endPrice = parseFloat(row.actual_end_price);
-                if (!startPrice || !endPrice) return;
+                const endPrice = parseFloat(nextRow.actual_start_price);
+                if (!startPrice || !endPrice) continue;
 
                 const goldReturn = (endPrice / startPrice) - 1;
                 const quantExposure = Math.max(0, Math.min(1, parseFloat(row.target_position || 0)));
@@ -683,15 +686,16 @@
                 geminiEquity = geminiEquity * (1 + geminiReturn);
                 quantCurve.push(quantEquity);
                 geminiCurve.push(geminiEquity);
+                intervals++;
 
                 if (quantReturn > 0) quantWins++;
                 if (geminiReturn > 0) geminiWins++;
-            });
+            }
 
             const quantTotalReturn = (quantEquity / 100) - 1;
             const geminiTotalReturn = (geminiEquity / 100) - 1;
-            const quantWinRate = closedRecords.length ? quantWins / closedRecords.length : 0;
-            const geminiWinRate = closedRecords.length ? geminiWins / closedRecords.length : 0;
+            const quantWinRate = intervals ? quantWins / intervals : 0;
+            const geminiWinRate = intervals ? geminiWins / intervals : 0;
             const quantDD = maxDrawdown(quantCurve);
             const geminiDD = maxDrawdown(geminiCurve);
 
@@ -701,8 +705,8 @@
             document.getElementById('gemini-return').innerText = (geminiTotalReturn * 100).toFixed(2) + "%";
             document.getElementById('quant-dd').innerText = (quantDD * 100).toFixed(2) + "%";
             document.getElementById('gemini-dd').innerText = (geminiDD * 100).toFixed(2) + "%";
-            document.getElementById('quant-trades').innerText = closedRecords.length;
-            document.getElementById('gemini-trades').innerText = closedRecords.length;
+            document.getElementById('quant-trades').innerText = intervals;
+            document.getElementById('gemini-trades').innerText = intervals;
             document.getElementById('quant-portfolio-win').innerText = (quantWinRate * 100).toFixed(1) + "%";
             document.getElementById('gemini-portfolio-win').innerText = (geminiWinRate * 100).toFixed(1) + "%";
 
@@ -714,9 +718,9 @@
             document.getElementById('gemini-dd').style.color = geminiDD < 0 ? "var(--accent-red)" : "var(--text-primary)";
 
             document.getElementById('portfolio-summary').innerText =
-                closedRecords.length > 0
-                    ? `START 100 | CLOSED ${closedRecords.length} SIGNALS | 5D FORWARD TEST`
-                    : "WAITING FOR FIRST CLOSED 5D SIGNAL";
+                intervals > 0
+                    ? `START 100 | ${intervals} DAILY REBALANCE INTERVALS | LATEST SIGNAL OPEN`
+                    : "WAITING FOR NEXT SIGNAL TO SCORE FIRST DAILY INTERVAL";
         }
 
         fetchLatestPrediction();
