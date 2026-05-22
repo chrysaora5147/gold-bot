@@ -32,4 +32,5 @@ jobs:
       - name: Run Gold Prediction Bot
         env:
           GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          RISK_PROFILE: ${{ vars.RISK_PROFILE || 'balanced' }}
         run: python bot.py
