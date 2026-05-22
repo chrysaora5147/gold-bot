@@ -425,7 +425,8 @@
                     const reasonEl = document.getElementById('ai-reason');
                     if(record.ai_reason) {
                         let formattedReason = record.ai_reason;
-                        if(formattedReason.includes("Quant") || formattedReason.includes("EMA Crossover")) {
+                        const reasonLooksLikeQuotaError = /quota|rate limit|429|resource exhausted|exceeded/i.test(formattedReason);
+                        if(reasonLooksLikeQuotaError) {
                             reasonEl.innerHTML = "<strong>[SYSTEM NOTICE]</strong> กำลังรอรอบรีเซ็ตโควตารายวันจาก Google AI Studio เพื่อดึงบทวิเคราะห์ภาพรวมเศรษฐกิจมหภาคล่าสุด...";
                         } else {
                             formattedReason = formattedReason.replace(/```json/g, '').replace(/```html/g, '').replace(/```/g, '');
