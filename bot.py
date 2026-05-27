@@ -3,11 +3,13 @@ import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 import google.generativeai as genai
+from google.api_core.exceptions import ResourceExhausted
 from supabase import create_client, Client
 import json
 import re
 import os
 from datetime import datetime, time, timedelta, timezone
+from time import sleep
 from zoneinfo import ZoneInfo
 
 print("🦿 กำลังคำนวณโมเดลคณิตศาสตร์ระบบไฮบริด V12 และเรียกใช้ Gemini API หลังบ้าน...")
@@ -66,7 +68,7 @@ if should_skip_daily_duplicate():
 # 1. FETCH HISTORICAL DATA FOR ROLLING & FEATURE ENGINEERING
 print("📥 Fetching historical data...")
 assets = {
-    'gold': 'GC=F', 'sp500': '^GSPC', 'us_dollar': 'DX-Y.NYB', 
+    'gold': 'GC=F', 'sp500': '^GSPC', 'us_dollar': 'DX-Y.NYB',
     'crude_oil': 'CL=F', 'vix': '^VIX', 'us_10y': '^TNX'
 }
 
@@ -111,7 +113,7 @@ df['ema_crossover'] = (df['gold_ema10'] - df['gold_ema50']) / df['gold_ema50']
 df['dist_from_ema50'] = (df['gold'] - df['gold_ema50']) / df['gold_ema50']
 
 features = [
-    'sp500_return', 'us_dollar_return', 'crude_oil_return', 
+    'sp500_return', 'us_dollar_return', 'crude_oil_return',
     'sp500_lag1', 'us_dollar_lag1', 'crude_oil_lag1',
     'vix_level', 'us_10y_level', 'gold_volatility',
     'gold_mom5', 'gold_mom20', 'dollar_mom5', 'gold_rsi14',
@@ -279,30 +281,30 @@ print("⚖️ กำลังตรวจสอบประวัติคำท
 try:
     # ดึงเฉพาะประวัติที่ยังไม่ได้ตรวจข้อสอบ (PENDING)
     pending_records = supabase.table('gold_predictions').select('*').is_('quant_result', 'null').execute()
-    
+
     if pending_records.data:
         for record in pending_records.data:
             record_id = record['id']
             run_date = pd.to_datetime(record['created_at']).tz_localize(None).normalize()
-            
+
             try:
                 # หาตำแหน่ง Index ของวันที่รันบอทในตารางข้อมูลหุ้น
                 start_idx = feature_frame.index.get_indexer([run_date], method='nearest')[0]
                 current_idx = len(feature_frame) - 1
-                
+
                 # เช็กเงื่อนไข: ถ้าเวลาผ่านไปครบ 5 วันทำการ ให้เริ่มตัดเกรด!
                 if (current_idx - start_idx) >= 5:
                     start_price = float(feature_frame['gold'].iloc[start_idx])
                     end_price = float(feature_frame['gold'].iloc[start_idx + 5])
-                    
+
                     actual_direction = "UP" if end_price > start_price else "DOWN"
-                    
+
                     quant_pred = record.get('model_direction', '')
                     quant_result = "WIN" if quant_pred == actual_direction else "LOSS"
-                    
+
                     ai_pred = record.get('ai_direction', '')
                     ai_result = "WIN" if ai_pred == actual_direction else "LOSS"
-                    
+
                     # ประทับตราเกรด และอัปเดตกลับลง Supabase
                     supabase.table('gold_predictions').update({
                         'quant_result': quant_result,
@@ -310,7 +312,7 @@ try:
                         'actual_start_price': start_price,
                         'actual_end_price': end_price
                     }).eq('id', record_id).execute()
-                    
+
                     print(f"✅ ตรวจข้อสอบ ID {record_id} เสร็จสิ้น! [Quant: {quant_result} | AI: {ai_result}]")
             except Exception as inner_e:
                 print(f"⚠️ ข้ามการตรวจข้อสอบ ID {record_id} เนื่องจากยังไม่มีข้อมูลอ้างอิง: {inner_e}")
@@ -389,8 +391,32 @@ prompt = f"""
 {{"direction": "UP หรือ DOWN", "confidence": ตัวเลขเปอร์เซ็นต์}}
 """
 
-response = gemini_model.generate_content(prompt)
-full_text = response.text
+full_text = None
+for attempt in range(1, 4):
+    try:
+        response = gemini_model.generate_content(prompt)
+        full_text = response.text
+        break
+    except ResourceExhausted as e:
+        if attempt < 3:
+            wait_seconds = 20 * attempt
+            print(f"⚠️ Gemini quota limit hit; retrying in {wait_seconds}s (attempt {attempt}/3)...")
+            sleep(wait_seconds)
+            continue
+
+        print(f"⚠️ Gemini quota limit hit after retries; using Quant fallback: {e}")
+    except Exception as e:
+        print(f"⚠️ Gemini analysis failed; using Quant fallback: {e}")
+        break
+
+if not full_text:
+    fallback_confidence = max(50, min(95, round(raw_proba * 100)))
+    full_text = (
+        "1. Gemini analysis unavailable in this run because the API quota/rate limit was reached.\n"
+        "2. รอบนี้ระบบใช้สัญญาณ Quant เป็นหลักเพื่อไม่ให้การอัปเดตประจำวันล้มทั้งรอบ\n"
+        "3. ระบบจะลองเรียก Gemini ใหม่ในรอบถัดไปเมื่อ quota กลับมาใช้งานได้\n"
+        f'{{"direction": "{model_direction}", "confidence": {fallback_confidence}}}'
+    )
 
 # 🎯 ระบบวิเคราะห์สกัดโครงสร้าง JSON สายข่าวอัจฉริยะ
 ai_direction_extracted = "UP" if raw_proba >= 0.50 else "DOWN"
@@ -398,26 +424,26 @@ ai_confidence_extracted = 0.50
 
 try:
     lines = [l.strip() for l in full_text.strip().split('\n') if l.strip()]
-    
+
     json_data = None
     for line in reversed(lines):
         match = re.search(r'\{.*\}', line)
         if match:
             json_data = json.loads(match.group(0))
             break
-            
+
     if json_data:
         raw_dir = json_data.get("direction", ai_direction_extracted).upper()
         if "UP" in raw_dir or "ขึ้น" in raw_dir:
             ai_direction_extracted = "UP"
         elif "DOWN" in raw_dir or "ลง" in raw_dir:
             ai_direction_extracted = "DOWN"
-            
+
         raw_conf = float(json_data.get("confidence", 50))
         if raw_conf > 1.0:
             raw_conf = raw_conf / 100.0
         ai_confidence_extracted = raw_conf
-    
+
     cleaned_lines = [l for l in lines if not l.startswith('{') and not l.endswith('}') and not l.startswith('`')]
     ai_reason_text = '\n'.join(cleaned_lines)
 except Exception as e:
