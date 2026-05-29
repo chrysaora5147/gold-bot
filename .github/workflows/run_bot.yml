@@ -24,20 +24,44 @@ jobs:
           echo "UTC time: $(date -u '+%Y-%m-%d %H:%M:%S')"
           echo "Bangkok time: $(TZ=Asia/Bangkok date '+%Y-%m-%d %H:%M:%S')"
 
+      - name: Gate delayed scheduled runs
+        id: run-window
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          bangkok_hhmm="$(TZ=Asia/Bangkok date '+%H%M')"
+          echo "Bangkok HHMM: ${bangkok_hhmm}"
+
+          if { [ "$bangkok_hhmm" -ge 500 ] && [ "$bangkok_hhmm" -le 630 ]; } || \
+             { [ "$bangkok_hhmm" -ge 1700 ] && [ "$bangkok_hhmm" -le 1830 ]; }; then
+            echo "Scheduled run is inside an allowed Bangkok window."
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Scheduled run arrived outside the allowed Bangkok windows; skipping bot insert."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Check out repository code
+        if: steps.run-window.outputs.should_run == 'true'
         uses: actions/checkout@v4
 
       - name: Set up Python
+        if: steps.run-window.outputs.should_run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
+        if: steps.run-window.outputs.should_run == 'true'
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade yfinance pandas numpy scikit-learn google-generativeai supabase
 
       - name: Run Gold Prediction Bot
+        if: steps.run-window.outputs.should_run == 'true'
         env:
           GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           RISK_PROFILE: ${{ vars.RISK_PROFILE || 'balanced' }}
